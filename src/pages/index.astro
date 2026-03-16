@@ -70,6 +70,7 @@ const posts = (postsData || []).map(post => ({
         <div class="modal-input-group">
           <label class="modal-caption">Enter Administrative Password</label>
           <input type="password" id="password-input" class="modal-input" placeholder="••••••••" />
+          <div id="password-error" class="error-message">Incorrect password. Please try again.</div>
         </div>
         <div class="modal-actions">
           <button class="modal-btn" id="close-password-modal">Cancel</button>
@@ -199,7 +200,11 @@ const posts = (postsData || []).map(post => ({
 
       // Password Submission
       document.getElementById('submit-password')?.addEventListener('click', () => {
+        const errorEl = document.getElementById('password-error')!;
+        const contentEl = passwordModal.querySelector('.modal-content')!;
+        
         if (passwordInput.value === PASSWORD) {
+          errorEl.classList.remove('show');
           closeModal(passwordModal);
           if (pendingAction === 'IMPORT') {
             openModal(importModal);
@@ -207,7 +212,11 @@ const posts = (postsData || []).map(post => ({
             handleGithubAction('DELETE', null, pendingPostId);
           }
         } else {
-          alert('Incorrect password.');
+          errorEl.classList.add('show');
+          contentEl.classList.add('shake');
+          setTimeout(() => contentEl.classList.remove('shake'), 400);
+          passwordInput.value = '';
+          passwordInput.focus();
         }
       });
 
@@ -223,9 +232,11 @@ const posts = (postsData || []).map(post => ({
       async function handleGithubAction(action: 'ADD' | 'DELETE', embedKey: string | null, postId: string | null) {
         let token = localStorage.getItem(GITHUB_TOKEN_KEY);
         if (!token) {
-          token = prompt('Enter your GitHub Personal Access Token to trigger update:');
-          if (token) localStorage.setItem(GITHUB_TOKEN_KEY, token);
-          else return;
+          token = prompt('One-time Setup: Please enter your GitHub Personal Access Token to authorize updates (this is stored only in your browser):');
+          if (token) {
+            token = token.trim();
+            localStorage.setItem(GITHUB_TOKEN_KEY, token);
+          } else return;
         }
 
         const statusLabel = action === 'ADD' ? 'Importing...' : 'Deleting...';
@@ -242,7 +253,7 @@ const posts = (postsData || []).map(post => ({
               'Authorization': `token ${token}`
             },
             body: JSON.stringify({ 
-              ref: 'main',
+              ref: 'master', // Corrected from main to master
               inputs: {
                 action: action,
                 embed_key: embedKey || '',
