@@ -1,0 +1,27 @@
+backend:
+  name: github
+  repo: YOUR_USERNAME/YOUR_REPO # Auto-deployment needs this to be updated
+  branch: main
+
+media_folder: "src/assets/images"
+public_folder: "~/assets/images" # Astro alias for assets
+
+collections:
+  - name: "data"
+    label: "Data Configuration"
+    files:
+      - file: "src/data/posts.json"
+        label: "Instagram Posts"
+        name: "posts"
+        fields:
+          - name: posts
+            label: Posts List
+            widget: list
+            fields:
+              - {label: "ID (Read Only)", name: "id", widget: "string", required: true}
+              - {label: "Caption", name: "caption", widget: "text", required: false}
+              - {label: "Timestamp", name: "timestamp", widget: "datetime"}
+              - {label: "Images", name: "images", widget: "list", field: {label: Image, name: image, widget: string}, required: false}
+              - {label: "Visibility (Hidden)", name: "hidden", widget: "boolean", default: false}
+              - {label: "Category", name: "category", widget: "select", options: ["Uncategorized", "Portrait", "Landscape", "Street", "Event", "Commercial", "Architecture", "Embedded"]}
+              - {label: "Instagram Embed HTML", name: "embedHtml", widget: "text", required: false, hint: "Paste the complete Instagram Embed <blockquote> HTML here. The system will automatically extract only the native image to match the minimalist aesthetic."}

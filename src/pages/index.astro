@@ -1,0 +1,121 @@
+---
+import '../styles/global.css';
+import GalleryPost from '../components/GalleryPost.astro';
+import postsData from '../data/posts.json';
+
+const posts = postsData || [];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Instagram Portfolio</title>
+    <!-- PhotoSwipe CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.css">
+  </head>
+  <body>
+    <!-- Transparent Minimalist Navigation -->
+    <nav class="minimal-nav">
+      <div class="nav-brand">F.Y.</div>
+      <div class="nav-links">
+        <a href="#gallery" class="nav-link">Work</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </div>
+    </nav>
+
+    <!-- Full-Screen Hero Section -->
+    <section class="hero-section">
+      <div class="hero-overlay"></div>
+      <img src="/images/hero_background.jpg" alt="Hero Photography" class="hero-bg" />
+      <div class="hero-content">
+        <h1 class="hero-title">Selected Works</h1>
+        <p class="hero-subtitle">Visual exploration and storytelling.</p>
+      </div>
+    </section>
+
+    <main class="gallery-grid" id="gallery">
+      {posts.map(post => (
+        <GalleryPost post={post} />
+      ))}
+    </main>
+
+    <section id="contact" class="contact-section">
+      <div class="contact-container">
+        <h2 class="contact-title">Contact</h2>
+        <div class="contact-email">
+          <a href="mailto:SMYFY1@OUTLOOK.COM">SMYFY1@OUTLOOK.COM</a>
+        </div>
+        <div class="contact-details">
+          <p>Available for visual collaborations and photography projects.</p>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      import PhotoSwipe from 'photoswipe';
+
+      document.querySelectorAll('.gallery-item-wrapper').forEach(wrapper => {
+        wrapper.addEventListener('click', (e) => {
+          e.preventDefault();
+          const imagesRaw = wrapper.getAttribute('data-images');
+          const captionStr = wrapper.getAttribute('data-caption');
+          
+          if (imagesRaw) {
+             const imagesArray = JSON.parse(imagesRaw);
+             // We use original dimensions mapping if available, but for now fallback to large
+             const pswpItems = imagesArray.map(imgSrc => ({
+               src: imgSrc,
+               width: 0, // Set to 0 to let initial load handle it or avoid stretching
+               height: 0,
+               alt: captionStr
+             }));
+             
+             const pswp = new PhotoSwipe({
+               dataSource: pswpItems,
+               padding: { top: 20, bottom: 80, left: 20, right: 20 },
+               wheelToZoom: true
+             });
+             
+             // Inject custom caption
+             pswp.on('uiRegister', function() {
+                pswp.ui.registerElement({
+                  name: 'custom-caption',
+                  order: 9,
+                  isButton: false,
+                  appendTo: 'root',
+                  html: '',
+                  onInit: (el, pswpInstance) => {
+                    const updateCaption = () => {
+                      el.innerHTML = captionStr ? captionStr.replace(/\n/g, '<br>') : '';
+                    };
+                    pswpInstance.on('change', updateCaption);
+                    updateCaption();
+                  }
+                });
+             });
+             
+             // Dynamic image size calculation prior to load to avoid wrong aspect ratios
+             pswp.on('gettingData', (e) => {
+               const item = e.data;
+               if (item.width > 0 && item.height > 0) return; // Already has size
+
+               const img = new Image();
+               img.onload = () => {
+                 item.width = img.naturalWidth;
+                 item.height = img.naturalHeight;
+                 pswp.refreshSlideContent(e.index);
+                 pswp.updateSize(true);
+               };
+               img.src = item.src;
+             });
+
+             pswp.init();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

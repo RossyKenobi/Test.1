@@ -1,0 +1,29 @@
+---
+const { post } = Astro.props;
+
+if (post.hidden) return;
+
+const images = post.images || [];
+const isCarousel = images.length > 1;
+const thumbnail = images.length > 0 ? images[0] : '';
+
+const imagesData = JSON.stringify(images);
+---
+
+<div class="gallery-item-wrapper" data-images={imagesData} data-caption={post.caption || ''}>
+  <a href={thumbnail} 
+     class="gallery-item" 
+     data-pswp-src={thumbnail}>
+     
+    <img src={thumbnail} alt={post.caption || 'Instagram Post'} loading="lazy" decoding="async" />
+    
+    {isCarousel && (
+      <div class="stack-icon" aria-label={`${images.length} images`}>
+        <svg viewBox="0 0 24 24">
+          <rect x="2" y="2" width="16" height="16" rx="2" ry="2"></rect>
+          <path d="M22 6v14a2 2 0 0 1-2 2H6"></path>
+        </svg>
+      </div>
+    )}
+  </a>
+</div>

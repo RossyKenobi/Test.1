@@ -1,0 +1,40 @@
+name: Sync Instagram Data
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight
+  workflow_dispatch: # Manual trigger from CMS
+
+jobs:
+  sync_instagram:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        working-directory: ./.github/scripts
+        run: npm install
+
+      - name: Run Sync Script
+        working-directory: ./.github/scripts
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: npm start
+
+      - name: Update Long-Lived Token Secret (If Applicable)
+        # Note: Depending on logic, script might output new token to GITHUB_ENV 
+        # But updating GitHub secrets requires gh cli:
+        # run: gh secret set IG_ACCESS_TOKEN --body "$NEW_TOKEN"
+        run: echo "Token refreshed (if coded)"
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: sync latest instagram posts"
+          file_pattern: src/data/posts.json src/assets/images/*.webp
