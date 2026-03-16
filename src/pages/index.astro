@@ -229,6 +229,75 @@ const posts = (postsData || []).map(post => ({
         }
       });
 
+      const progressModal = document.getElementById('progress-modal')!;
+      const progressBarInner = document.getElementById('progress-bar-inner')!;
+      const progressStatusText = document.getElementById('progress-status-text')!;
+      const progressTitle = document.getElementById('progress-title')!;
+      const refreshPageBtn = document.getElementById('refresh-page-btn') as HTMLButtonElement;
+
+      refreshPageBtn.addEventListener('click', () => window.location.reload());
+
+      async function startPollingForProgress(token: string) {
+        openModal(progressModal);
+        progressBarInner.style.width = '10%';
+        progressStatusText.innerText = 'Triggering workflow...';
+        refreshPageBtn.classList.remove('active');
+        
+        const repo = 'RossyKenobi/Test.1';
+        let startTime = Date.now();
+        let maxDuration = 180000; // 3 minutes timeout
+
+        const poll = async () => {
+          try {
+            const res = await fetch(`https://api.github.com/repos/${repo}/actions/runs?workflow=sync-instagram.yml&per_page=1`, {
+              headers: { 'Authorization': `token ${token}` }
+            });
+            const data = await res.json();
+            const latestRun = data.workflow_runs[0];
+
+            if (!latestRun || new Date(latestRun.created_at).getTime() < startTime - 10000) {
+              // Still waiting for the run to be created
+              progressStatusText.innerText = 'Queued in GitHub...';
+              progressBarInner.style.width = '20%';
+            } else {
+              const status = latestRun.status;
+              const conclusion = latestRun.conclusion;
+
+              if (status === 'queued') {
+                progressStatusText.innerText = 'Initializing build...';
+                progressBarInner.style.width = '35%';
+              } else if (status === 'in_progress') {
+                progressStatusText.innerText = 'Extracting Instagram photos...';
+                progressBarInner.style.width = '65%';
+              } else if (status === 'completed') {
+                if (conclusion === 'success') {
+                  progressBarInner.style.width = '100%';
+                  progressStatusText.innerText = 'Success! Content updated.';
+                  progressTitle.innerText = 'Import Complete';
+                  refreshPageBtn.classList.add('active');
+                  return; // Stop polling
+                } else {
+                  progressStatusText.innerText = `Failed: ${conclusion}`;
+                  setTimeout(() => closeModal(progressModal), 3000);
+                  return;
+                }
+              }
+            }
+
+            if (Date.now() - startTime < maxDuration) {
+              setTimeout(poll, 4000);
+            } else {
+              progressStatusText.innerText = 'Timed out. Please check GitHub Actions manually.';
+            }
+          } catch (e) {
+            console.error('Polling error:', e);
+            setTimeout(poll, 5000);
+          }
+        };
+
+        setTimeout(poll, 2000);
+      }
+
       async function handleGithubAction(action: 'ADD' | 'DELETE', embedKey: string | null, postId: string | null) {
         let token = localStorage.getItem(GITHUB_TOKEN_KEY);
         if (!token) {
@@ -239,12 +308,7 @@ const posts = (postsData || []).map(post => ({
           } else return;
         }
 
-        const statusLabel = action === 'ADD' ? 'Importing...' : 'Deleting...';
-        console.log(`${statusLabel} post...`);
-
         try {
-          // Note: We need to replace YOUR_USERNAME/YOUR_REPO dynamically or via build env
-          // For now, using placeholders which the user should replace or I can find
           const repo = 'RossyKenobi/Test.1'; 
           const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/sync-instagram.yml/dispatches`, {
             method: 'POST',
@@ -253,7 +317,7 @@ const posts = (postsData || []).map(post => ({
               'Authorization': `token ${token}`
             },
             body: JSON.stringify({ 
-              ref: 'master', // Corrected from main to master
+              ref: 'master',
               inputs: {
                 action: action,
                 embed_key: embedKey || '',
@@ -263,10 +327,10 @@ const posts = (postsData || []).map(post => ({
           });
 
           if (res.ok || res.status === 204) {
-            alert(`Action triggered successfully! Changes will appear in 1-2 minutes.`);
+            startPollingForProgress(token);
           } else {
             const err = await res.json();
-            alert(`Failed: ${err.message || res.statusText}`);
+            alert(`Failed to start: ${err.message || res.statusText}`);
           }
         } catch (e: any) {
           alert(`Error: ${e.message}`);

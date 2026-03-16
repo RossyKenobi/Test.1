@@ -490,3 +490,54 @@ html {
   50% { transform: translateX(8px); }
   75% { transform: translateX(-4px); }
 }
+
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin: 20px 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #fff;
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+.progress-status {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  margin-top: 10px;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+}
+
+.refresh-btn {
+  display: none;
+  margin-top: 20px;
+  width: 100%;
+  background: #fff;
+  color: #000;
+  border: none;
+  padding: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.refresh-btn:hover {
+  transform: translateY(-2px);
+}
+
+.refresh-btn.active {
+  display: block;
+}
