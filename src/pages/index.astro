@@ -3,7 +3,11 @@ import '../styles/global.css';
 import GalleryPost from '../components/GalleryPost.astro';
 import postsData from '../data/posts.json';
 
-const posts = postsData || [];
+const base = import.meta.env.BASE_URL;
+const posts = (postsData || []).map(post => ({
+  ...post,
+  images: (post.images || []).map(img => `${base}${img.startsWith('/') ? img.slice(1) : img}`)
+}));
 ---
 
 <html lang="en">
@@ -29,7 +33,7 @@ const posts = postsData || [];
     <!-- Full-Screen Hero Section -->
     <section class="hero-section">
       <div class="hero-overlay"></div>
-      <img src="/images/hero_background.jpg" alt="Hero Photography" class="hero-bg" />
+      <img src={`${base}images/hero_background.jpg`} alt="Hero Photography" class="hero-bg" />
       <div class="hero-content">
         <h1 class="hero-title">Selected Works</h1>
         <p class="hero-subtitle">Visual exploration and storytelling.</p>
