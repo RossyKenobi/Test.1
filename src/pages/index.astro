@@ -297,7 +297,7 @@ const posts = (postsData || []).map(post => ({
                   const latestDeploy = deployData.workflow_runs[0];
 
                   // Check if this deployment was triggered after our sync finished
-                  if (latestDeploy && new Date(latestDeploy.created_at).getTime() > new Date(latestRun.updated_at).getTime() - 30000) {
+                  if (latestDeploy && new Date(latestDeploy.created_at).getTime() > startTime) {
                     if (latestDeploy.status === 'completed') {
                       if (latestDeploy.conclusion === 'success') {
                         progressBarInner.style.width = '100%';
