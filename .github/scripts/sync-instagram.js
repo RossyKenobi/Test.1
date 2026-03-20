@@ -40,9 +40,14 @@ async function downloadAndOptimizeImage(url, id, index = 0) {
 }
 
 async function getShortcode(input) {
-  const regex = /\/p\/([A-Za-z0-9_-]+)\//;
+  // Support both full HTML embeds and direct URLs, trailing slashes optional
+  const regex = /\/p\/([A-Za-z0-9_-]+)(?:\/|\?|["']|$)/;
   const match = input.match(regex);
-  return match ? match[1] : input.trim();
+  if (match) return match[1];
+  
+  // If no match, try cleaning up the input if it's a URL
+  const cleaned = input.trim().split('?')[0].replace(/\/$/, '').split('/').pop();
+  return cleaned || input.trim();
 }
 
 async function scrapePost(shortcode) {
@@ -53,7 +58,19 @@ async function scrapePost(shortcode) {
       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
   });
+
+  if (!response.ok) {
+    console.error(`Failed to fetch embed page: ${response.status} ${response.statusText}`);
+    process.exit(1);
+  }
+
   const html = await response.text();
+  console.log(`Fetched HTML length: ${html.length} bytes`);
+  
+  if (html.includes('login_container') || html.length < 1000) {
+    console.error("Received a login page or very short HTML. Instagram is likely blocking this request.");
+    process.exit(1);
+  }
 
   // Robust extraction of CDN image URLs (JPG and WEBP)
   const imgRegex = /https:\/\/scontent[^" ]+?\.(?:jpg|webp)[^" ]*/g;
