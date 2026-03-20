@@ -55,7 +55,9 @@ async function scrapePost(shortcode) {
   console.log(`Scraping ${url}...`);
   const response = await fetch(url, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5'
     }
   });
 
@@ -69,6 +71,7 @@ async function scrapePost(shortcode) {
   
   if (html.includes('login_container') || html.length < 1000) {
     console.error("Received a login page or very short HTML. Instagram is likely blocking this request.");
+    console.error("HTML Snippet: " + html.slice(0, 500).replace(/\n/g, ' '));
     process.exit(1);
   }
 
@@ -77,6 +80,11 @@ async function scrapePost(shortcode) {
   const rawImages = (html.match(imgRegex) || []).map(url => url.replace(/\\u0026/g, '&').replace(/&amp;/g, '&'));
   
   console.log(`Found ${rawImages.length} raw image URL matches in HTML.`);
+  if (rawImages.length === 0) {
+    console.error("No image URLs found in the HTML. Instagram might have changed the embed format.");
+    console.error("HTML Snippet: " + html.slice(0, 1000).replace(/\n/g, ' '));
+    process.exit(1);
+  }
 
   const uniqueImages = new Map();
   
