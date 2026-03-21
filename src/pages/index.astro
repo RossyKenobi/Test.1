@@ -40,6 +40,8 @@ const posts = (postsData || []).map(post => ({
       </div>
     </header>
 
+    <div class="gallery-divider hero-divider"></div>
+
     <main class="gallery-grid" id="gallery">
       {posts.map(post => (
         <GalleryPost post={post} />
@@ -245,6 +247,9 @@ const posts = (postsData || []).map(post => ({
       heroOverlay.className = 'hero-overlay-blur';
       document.body.prepend(heroOverlay);
 
+      const minimalNav = document.querySelector('.minimal-nav');
+      const heroDivider = document.querySelector('.hero-divider');
+
       window.addEventListener('scroll', () => {
         const scrollY = window.scrollY;
         const viewportHeight = window.innerHeight;
@@ -257,6 +262,18 @@ const posts = (postsData || []).map(post => ({
         
         heroOverlay.style.background = `rgba(0, 0, 0, ${opacity})`; 
         heroOverlay.style.backdropFilter = `blur(${progress * 20}px)`;
+
+        // Handle Nav Blur visibility
+        if (minimalNav) {
+            if (scrollY > 50) minimalNav.classList.add('scrolled');
+            else minimalNav.classList.remove('scrolled');
+        }
+
+        // Handle Hero Divider visibility
+        if (heroDivider) {
+            if (scrollY > viewportHeight * 0.5) heroDivider.classList.add('visible');
+            else heroDivider.classList.remove('visible');
+        }
       });
       // Initial trigger
       heroOverlay.style.background = `rgba(0, 0, 0, 0.35)`;
@@ -534,6 +551,24 @@ const posts = (postsData || []).map(post => ({
                  return { top: 40, bottom: 80, left: pad, right: pad };
                }
              });
+
+             // Dynamic peeking condition based on image proportion
+             const adjustSpacing = () => {
+                 if(window.innerWidth <= 768) return; 
+                 if(!pswp.currSlide || !pswp.currSlide.data || !pswp.currSlide.data.width) return;
+                 const ratio = pswp.currSlide.data.width / pswp.currSlide.data.height;
+                 let newSpacing = -0.35; // Default for landscape
+                 if (ratio < 0.8) newSpacing = -0.65; // Pull severely for portraits
+                 else if (ratio < 1.2) newSpacing = -0.45; // Pull moderately for squares
+
+                 if (pswp.options.spacing !== newSpacing) {
+                     pswp.options.spacing = newSpacing;
+                     pswp.updateSize(false);
+                 }
+             };
+
+             pswp.on('change', adjustSpacing);
+             pswp.on('firstUpdate', adjustSpacing);
              
              pswp.on('uiRegister', function() {
                 pswp.ui.registerElement({

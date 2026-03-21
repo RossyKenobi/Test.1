@@ -24,9 +24,9 @@ header {
   left: 0;
   width: 100%;
   padding: 2rem 4rem 4rem; /* Extends the blur downwards */
-  background: linear-gradient(to bottom, rgba(10,10,10,0.8) 0%, rgba(10,10,10,0.4) 60%, transparent 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: transparent;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
   -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
   mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
   display: flex;
@@ -35,6 +35,13 @@ header {
   z-index: 100;
   box-sizing: border-box;
   pointer-events: none;
+  transition: all 0.5s ease;
+}
+
+.minimal-nav.scrolled {
+  background: linear-gradient(to bottom, rgba(10,10,10,0.8) 0%, rgba(10,10,10,0.4) 60%, transparent 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .minimal-nav > * {
@@ -274,6 +281,16 @@ body.is-editing .sortable-ghost .gallery-item {
   width: calc(100% - 8rem);
   margin: 0 auto;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-divider {
+  margin-bottom: 4rem;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.hero-divider.visible {
+  opacity: 1;
 }
 
 .edit-controls {
