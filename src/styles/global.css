@@ -102,8 +102,8 @@ header {
 
 .gallery-grid {
   columns: 1;
-  column-gap: 4rem; /* Generous whitespace */
-  padding: 6rem 4rem; /* Large paddings for minimalist frame */
+  column-gap: 4rem;
+  padding: 4rem 4rem 2rem;
   max-width: 1800px;
   margin: 0 auto;
 }
@@ -120,12 +120,17 @@ header {
   .gallery-grid { columns: 4; }
 }
 
-.gallery-item {
+.gallery-item-wrapper {
   break-inside: avoid;
-  margin-bottom: 4rem; /* High margin */
+  margin-bottom: 4rem; /* Moved from .gallery-item to fix SortableJS border size */
+  position: relative;
+}
+
+.gallery-item {
+  margin-bottom: 0;
   position: relative;
   overflow: hidden;
-  background: transparent; /* Remove card bg */
+  background: transparent;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   display: block;
@@ -244,8 +249,8 @@ header {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -405,7 +410,7 @@ html {
 
 /* Contact Section */
 .contact-section {
-  padding: 10rem 4rem;
+  padding: 4rem 4rem 6rem;
   background-color: transparent;
   border-top: none;
 }

@@ -100,20 +100,8 @@ const posts = (postsData || []).map(post => ({
     <div class="modal-overlay" id="import-modal">
       <div class="modal-content">
         <h3 class="modal-title">Import New Work</h3>
-        
-        <div class="import-tabs">
-          <button class="tab-btn active" data-tab="ig">Instagram</button>
-          <button class="tab-btn" data-tab="local">Local Files</button>
-        </div>
 
-        <div id="ig-tab" class="tab-content active">
-          <div class="modal-input-group">
-            <label class="modal-caption">instagram embed key or url</label>
-            <input type="text" id="embed-key-input" class="modal-input" placeholder="Paste link..." />
-          </div>
-        </div>
-
-        <div id="local-tab" class="tab-content">
+        <div id="local-tab" class="tab-content active">
           <div class="modal-input-group">
             <label class="modal-caption">select images</label>
             <input type="file" id="local-file-input" class="modal-input" multiple accept="image/*" />
@@ -176,10 +164,15 @@ const posts = (postsData || []).map(post => ({
 
       /* --- Edit Mode Styles --- */
       body.is-editing .gallery-item-wrapper {
-        border: 2px dashed rgba(255, 255, 255, 0.3);
-        border-radius: 8px;
-        padding: 4px;
         cursor: grab;
+      }
+      body.is-editing .sortable-ghost {
+        opacity: 0.5;
+        border: 2px dashed rgba(255, 255, 255, 0.5);
+        border-radius: 4px;
+      }
+      body.is-editing .sortable-drag {
+        cursor: grabbing !important;
       }
       body.is-editing .delete-btn {
         display: flex !important;
@@ -265,6 +258,13 @@ const posts = (postsData || []).map(post => ({
       const heroOverlay = document.createElement('div');
       heroOverlay.className = 'hero-overlay-blur';
       document.body.prepend(heroOverlay);
+      
+      const editControls = document.querySelector('.edit-controls') as HTMLElement;
+      if (editControls) {
+        editControls.style.opacity = '0';
+        editControls.style.transition = 'opacity 0.3s ease';
+        editControls.style.pointerEvents = 'none';
+      }
 
       window.addEventListener('scroll', () => {
         const scrollY = window.scrollY;
@@ -273,9 +273,26 @@ const posts = (postsData || []).map(post => ({
         // Cap the progress so it doesn't get completely dark
         const progress = Math.min(scrollY / (viewportHeight * 0.8), 1);
         
-        heroOverlay.style.background = `rgba(0, 0, 0, ${progress * 0.55})`; // Max 55% dark
+        // Start brightness at 0.35 opacity and go up to 0.60
+        const opacity = 0.35 + (progress * 0.25);
+        
+        heroOverlay.style.background = `rgba(0, 0, 0, ${opacity})`; 
         heroOverlay.style.backdropFilter = `blur(${progress * 20}px)`;
+        
+        // Hide edit button when at top
+        if (editControls) {
+          if (scrollY > viewportHeight * 0.5 || isEditMode) {
+             editControls.style.opacity = '1';
+             editControls.style.pointerEvents = 'auto';
+          } else {
+             editControls.style.opacity = '0';
+             editControls.style.pointerEvents = 'none';
+          }
+        }
       });
+      // Initial trigger
+      heroOverlay.style.background = `rgba(0, 0, 0, 0.35)`;
+      heroOverlay.style.backdropFilter = `blur(0px)`;
 
       // --- Modals & DOM Elements Initialization ---
       const passwordModal = document.getElementById('password-modal')!;
@@ -311,6 +328,7 @@ const posts = (postsData || []).map(post => ({
       let sortableInstance: any = null;
       let pendingAction: 'IMPORT' | 'DELETE' | 'ENTER_EDIT' | 'REORDER' | null = null;
       let pendingPostId: string | null = null;
+      let initialOrder: string[] = [];
 
       const editBtn = document.getElementById('open-edit-mode')!;
       const editActions = document.getElementById('edit-actions')!;
@@ -350,6 +368,9 @@ const posts = (postsData || []).map(post => ({
         editBtn.classList.add('hidden');
         editActions.classList.remove('hidden');
 
+        const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
+        initialOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
+
         const el = document.getElementById('gallery')!;
         sortableInstance = new Sortable(el, {
           animation: 150,
@@ -359,7 +380,13 @@ const posts = (postsData || []).map(post => ({
 
       saveBtn.addEventListener('click', async () => {
         const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
-        const newOrder = orderNodes.map(node => node.getAttribute('data-id'));
+        const newOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
+        
+        if (newOrder.join(',') === initialOrder.join(',')) {
+          console.log("No changes detected. Exiting edit mode silently.");
+          exitEditMode();
+          return;
+        }
         
         // We'll trigger a workflow to reorder the JSON
         handleGithubAction('REORDER', JSON.stringify(newOrder), null);
@@ -655,17 +682,8 @@ const posts = (postsData || []).map(post => ({
 
       // --- Confirm Import (Unified) ---
       document.getElementById('confirm-import')?.addEventListener('click', () => {
-        const activeTab = document.querySelector('.tab-btn.active')?.getAttribute('data-tab');
-        if (activeTab === 'ig') {
-          const embedKey = (document.getElementById('embed-key-input') as HTMLInputElement).value.trim();
-          if (embedKey) {
-            handleGithubAction('ADD', embedKey, null);
-            closeModal(importModal);
-          }
-        } else {
-          handleLocalUpload();
-          closeModal(importModal);
-        }
+        handleLocalUpload();
+        closeModal(importModal);
       });
     </script>
   </body>
