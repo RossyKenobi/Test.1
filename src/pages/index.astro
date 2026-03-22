@@ -105,7 +105,7 @@ const posts = (postsData || []).map(post => ({
                 <label for="local-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose Files</label>
                 <span id="file-name-display" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em; font-weight: 300;">No file chosen</span>
             </div>
-            <input type="file" id="local-file-input" class="modal-input" multiple accept="image/*" style="display: none;" />
+            <input type="file" id="local-file-input" class="modal-input" multiple accept="image/*" style="display: none; position: fixed; top: -9999px;" />
             
             <label class="modal-caption" style="margin-top: 1rem; margin-bottom: 0.5rem; display: block;">ADD A CAPTION</label>
             <input type="text" id="local-caption-input" class="modal-input" placeholder="" style="margin-bottom: 2rem; text-align: left; padding: 0.5rem 0; width: 100%;" />
@@ -126,7 +126,7 @@ const posts = (postsData || []).map(post => ({
         <p class="modal-caption" style="margin-bottom: 0;">Drag to reorder, click × to delete</p>
         <div id="mini-gallery-grid" class="mini-gallery-grid"></div>
         <textarea id="mini-caption-input" class="mini-caption-textarea" placeholder="Stack caption..."></textarea>
-        <input type="file" id="mini-file-input" multiple accept="image/*" style="display: none;" />
+        <input type="file" id="mini-file-input" multiple accept="image/*" style="display: none; position: fixed; top: -9999px;" />
         <div class="modal-actions" style="margin-top: 2rem; justify-content: flex-end; gap: 1.5rem;">
           <button class="action-btn" id="close-mini-gallery">Cancel</button>
           <button class="action-btn confirm" id="mini-import-btn" style="color: black;">Import</button>
@@ -182,8 +182,8 @@ const posts = (postsData || []).map(post => ({
           <div class="progress-bar" id="progress-bar-inner"></div>
         </div>
         <p class="progress-status" id="progress-status-text">Checking GitHub status...</p>
-        <div class="modal-actions" style="justify-content: center;">
-          <button class="refresh-btn" id="refresh-page-btn">Refresh to see changes</button>
+        <div class="modal-actions" style="justify-content: center; margin-top: 0.5rem;">
+          <button class="refresh-btn" id="refresh-page-btn">Refresh</button>
         </div>
       </div>
     </div>
