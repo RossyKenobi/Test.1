@@ -355,7 +355,7 @@ const posts = (postsData || []).map(post => ({
       const PASSWORD = 'steveyfff';
       let isEditMode = false;
       let sortableInstance: any = null;
-      let isAdminLoggedIn = false;
+      let isAdminLoggedIn = sessionStorage.getItem('admin_logged_in') === 'true';
       let pendingAction: 'IMPORT' | 'DELETE' | 'ENTER_EDIT' | 'REORDER' | 'DISCARD_MINI_GALLERY' | 'DISCARD_EDITS' | 'ADMIN_LOGIN' | null = null;
       let pendingPostId: string | null = null;
       let initialOrder: string[] = [];
@@ -368,6 +368,11 @@ const posts = (postsData || []).map(post => ({
       const adminNavLink = document.getElementById('admin-nav-link')!;
       const galleryBottomBar = document.getElementById('gallery-bottom-bar')!;
 
+      if (isAdminLoggedIn) {
+          adminNavLink.textContent = 'Log Out';
+          galleryBottomBar.style.display = 'flex';
+      }
+
       const confirmDiscardModal = document.getElementById('confirm-discard-modal')!;
       const confirmDiscardBtn = document.getElementById('confirm-discard-btn')!;
       const cancelDiscardBtn = document.getElementById('cancel-discard-btn')!;
@@ -376,6 +381,7 @@ const posts = (postsData || []).map(post => ({
         e.preventDefault();
         if (isAdminLoggedIn) {
           isAdminLoggedIn = false;
+          sessionStorage.removeItem('admin_logged_in');
           adminNavLink.textContent = 'Admin';
           galleryBottomBar.style.display = 'none';
           if (isEditMode) exitEditMode();
@@ -426,6 +432,7 @@ const posts = (postsData || []).map(post => ({
           
           if (pendingAction === 'ADMIN_LOGIN') {
             isAdminLoggedIn = true;
+            sessionStorage.setItem('admin_logged_in', 'true');
             adminNavLink.textContent = 'Log Out';
             galleryBottomBar.style.display = 'flex';
           } else if (pendingAction === 'ENTER_EDIT') {
