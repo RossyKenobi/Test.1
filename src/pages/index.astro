@@ -376,8 +376,14 @@ const posts = (postsData || []).map(post => ({
       });
 
       cancelBtn.addEventListener('click', () => {
-        pendingAction = 'DISCARD_EDITS';
-        openModal(confirmDiscardModal);
+        const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
+        const currentOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
+        if (currentOrder.join(',') !== initialOrder.join(',')) {
+          pendingAction = 'DISCARD_EDITS';
+          openModal(confirmDiscardModal);
+        } else {
+          exitEditMode();
+        }
       });
 
       confirmDiscardBtn.addEventListener('click', () => {

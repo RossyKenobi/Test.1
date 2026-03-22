@@ -119,6 +119,9 @@ header {
   padding: 4rem 4rem 2rem;
   max-width: 1800px;
   margin: 0 auto;
+  column-fill: balance;
+  -moz-column-fill: balance;
+  -webkit-column-fill: balance;
 }
 
 @media (min-width: 640px) {
@@ -134,10 +137,12 @@ header {
 }
 
 .gallery-item-wrapper {
-  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  break-inside: avoid-column;
   margin-bottom: 4rem; /* Moved from .gallery-item to fix SortableJS border size */
   position: relative;
-  display: inline-block;
+  display: block;
   width: 100%;
 }
 
