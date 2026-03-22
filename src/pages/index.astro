@@ -94,21 +94,26 @@ const posts = (postsData || []).map(post => ({
 
     <!-- Import Modal -->
     <div class="modal-overlay" id="import-modal">
-      <div class="modal-content">
-        <h3 class="modal-title">Import New Work</h3>
+      <div class="modal-content" style="max-width: 500px;">
+        <h3 class="modal-title" style="margin-bottom: 3rem; letter-spacing: 0.2em;">IMPORT NEW WORK</h3>
 
         <div id="local-tab" class="tab-content active">
           <div class="modal-input-group">
-            <label class="modal-caption">select images</label>
-            <input type="file" id="local-file-input" class="modal-input" multiple accept="image/*" />
-            <div id="file-preview" class="file-preview-grid"></div>
-            <textarea id="local-caption-input" class="modal-input" placeholder="Add a caption..."></textarea>
+            <label class="modal-caption" style="margin-bottom: 1.5rem; display: block;">SELECT IMAGES</label>
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem; margin-bottom: 2.5rem;">
+                <label for="local-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose Files</label>
+                <span id="file-name-display" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em; font-weight: 300;">No file chosen</span>
+            </div>
+            <input type="file" id="local-file-input" class="modal-input" multiple accept="image/*" style="display: none;" />
+            
+            <label class="modal-caption" style="margin-top: 1rem; margin-bottom: 1.5rem; display: block;">ADD A CAPTION</label>
+            <textarea id="local-caption-input" class="modal-input" placeholder="" style="margin-bottom: 3rem; text-align: left; padding: 0.5rem 0; width: 100%;"></textarea>
           </div>
         </div>
 
-        <div class="modal-actions">
-          <button class="modal-btn" id="close-import-modal">Cancel</button>
-          <button class="modal-btn confirm" id="confirm-import">Confirm</button>
+        <div class="modal-actions" style="margin-top: 1rem; justify-content: center; gap: 1.5rem;">
+          <button class="action-btn" id="close-import-modal">Cancel</button>
+          <button class="action-btn confirm" id="confirm-import">Confirm</button>
         </div>
       </div>
     </div>
@@ -121,10 +126,10 @@ const posts = (postsData || []).map(post => ({
         <div id="mini-gallery-grid" class="mini-gallery-grid"></div>
         <textarea id="mini-caption-input" class="mini-caption-textarea" placeholder="Stack caption..."></textarea>
         <input type="file" id="mini-file-input" multiple accept="image/*" style="display: none;" />
-        <div class="modal-actions" style="margin-top: 0; justify-content: flex-end; gap: 1.5rem;">
-          <button class="settings-btn" id="close-mini-gallery" style="color: #666;">CANCEL</button>
-          <button class="settings-btn" id="mini-import-btn" style="color: #666;">IMPORT</button>
-          <button class="settings-btn" id="confirm-mini-gallery">DONE</button>
+        <div class="modal-actions" style="margin-top: 2rem; justify-content: flex-end; gap: 1.5rem;">
+          <button class="action-btn" id="close-mini-gallery">Cancel</button>
+          <button class="action-btn confirm" id="mini-import-btn" style="color: black;">Import</button>
+          <button class="action-btn confirm" id="confirm-mini-gallery">Done</button>
         </div>
       </div>
     </div>
@@ -134,9 +139,9 @@ const posts = (postsData || []).map(post => ({
       <div class="modal-content">
         <h3 class="modal-title">Discard Changes</h3>
         <p class="modal-caption" style="margin-bottom: 2rem;">All unsaved changes will be discarded. Are you sure you want to cancel?</p>
-        <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 1rem;">
-          <button class="settings-btn" id="cancel-discard-btn" style="color: #666;">NO</button>
-          <button class="settings-btn" id="confirm-discard-btn" style="color: #e11d48;">YES, DISCARD</button>
+        <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 2rem;">
+          <button class="action-btn" id="cancel-discard-btn">No</button>
+          <button class="action-btn confirm" id="confirm-discard-btn" style="color: #e11d48;">Yes, Discard</button>
         </div>
       </div>
     </div>
@@ -190,9 +195,7 @@ const posts = (postsData || []).map(post => ({
         cursor: grab;
       }
       body.is-editing .sortable-ghost {
-        opacity: 0.5;
-        border: 2px dashed rgba(255, 255, 255, 0.5);
-        border-radius: 4px;
+        opacity: 0.3;
       }
       body.is-editing .sortable-drag {
         cursor: grabbing !important;
@@ -449,6 +452,14 @@ const posts = (postsData || []).map(post => ({
       });
 
       fileInput?.addEventListener('change', () => {
+        const fileNameDisplay = document.getElementById('file-name-display');
+        if (fileInput.files && fileInput.files.length > 0) {
+          const count = fileInput.files.length;
+          if (fileNameDisplay) fileNameDisplay.textContent = `${count} file${count > 1 ? 's' : ''} chosen`;
+        } else {
+           if (fileNameDisplay) fileNameDisplay.textContent = 'No file chosen';
+        }
+
         if (!preview) return;
         preview.innerHTML = '';
         Array.from(fileInput.files || []).forEach(file => {

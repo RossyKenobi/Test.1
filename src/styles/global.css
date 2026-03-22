@@ -516,17 +516,24 @@ body.is-editing .sortable-ghost .gallery-item {
 }
 .mini-gallery-item {
   position: relative;
+  width: 100%;
   aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
   cursor: grab;
   border: 1px dashed transparent;
   transition: border-color 0.2s;
+  box-sizing: border-box;
+  background-color: rgba(255,255,255,0.05); /* Visually helps debugging bounds */
 }
 .mini-gallery-item img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none; /* Let the parent capture sortable drags */
 }
 .mini-gallery-item:hover {
   border-color: rgba(255, 255, 255, 0.4);
