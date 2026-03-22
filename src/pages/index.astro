@@ -105,7 +105,7 @@ const posts = (postsData || []).map(post => ({
                 <label for="local-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose Files</label>
                 <span id="file-name-display" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em; font-weight: 300;">No file chosen</span>
             </div>
-            <input type="file" id="local-file-input" class="modal-input" multiple accept="image/*" style="display: none; position: fixed; top: -9999px;" />
+
             
             <label class="modal-caption" style="margin-top: 1rem; margin-bottom: 0.5rem; display: block;">ADD A CAPTION</label>
             <input type="text" id="local-caption-input" class="modal-input" placeholder="" style="margin-bottom: 2rem; text-align: left; padding: 0.5rem 0; width: 100%;" />
@@ -126,7 +126,7 @@ const posts = (postsData || []).map(post => ({
         <p class="modal-caption" style="margin-bottom: 0;">Drag to reorder, click × to delete</p>
         <div id="mini-gallery-grid" class="mini-gallery-grid"></div>
         <textarea id="mini-caption-input" class="mini-caption-textarea" placeholder="Stack caption..."></textarea>
-        <input type="file" id="mini-file-input" multiple accept="image/*" style="display: none; position: fixed; top: -9999px;" />
+
         <div class="modal-actions" style="margin-top: 2rem; justify-content: flex-end; gap: 1.5rem;">
           <button class="action-btn" id="close-mini-gallery">Cancel</button>
           <button class="action-btn confirm" id="mini-import-btn" style="color: black;">Import</button>
@@ -187,6 +187,10 @@ const posts = (postsData || []).map(post => ({
         </div>
       </div>
     </div>
+
+    <!-- File inputs OUTSIDE all modals to prevent file picker from closing modals -->
+    <input type="file" id="local-file-input" multiple accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0);" />
+    <input type="file" id="mini-file-input" multiple accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0);" />
 
     <style is:global>
       /* --- Hero Scroll Effect --- */
@@ -359,11 +363,14 @@ const posts = (postsData || []).map(post => ({
       const progressTitle = document.getElementById('progress-title')!;
       const refreshPageBtn = document.getElementById('refresh-page-btn') as HTMLButtonElement;
 
+      let filePickerActive = false;
+
       const openModal = (modal: HTMLElement) => {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
       };
       const closeModal = (modal: HTMLElement) => {
+        if (filePickerActive) return;
         modal.classList.remove('active');
         if (passwordInput) passwordInput.value = '';
         if (embedKeyInput) embedKeyInput.value = '';
@@ -547,7 +554,10 @@ const posts = (postsData || []).map(post => ({
         });
       });
 
+      // Guard: set filePickerActive when file input is triggered
+      fileInput?.addEventListener('click', () => { filePickerActive = true; });
       fileInput?.addEventListener('change', () => {
+        filePickerActive = false;
         const fileNameDisplay = document.getElementById('file-name-display');
         if (fileInput.files && fileInput.files.length > 0) {
           const count = fileInput.files.length;
@@ -569,6 +579,8 @@ const posts = (postsData || []).map(post => ({
           reader.readAsDataURL(file);
         });
       });
+      // Also clear guard if file picker is cancelled (no change event fires)
+      fileInput?.addEventListener('cancel', () => { filePickerActive = false; });
 
       addBtn.addEventListener('click', () => {
         pendingAction = 'IMPORT';
@@ -862,8 +874,12 @@ const posts = (postsData || []).map(post => ({
       const miniImportBtn = document.getElementById('mini-import-btn')!;
       const miniFileInput = document.getElementById('mini-file-input') as HTMLInputElement;
 
-      miniImportBtn.addEventListener('click', () => miniFileInput.click());
+      miniImportBtn.addEventListener('click', () => {
+        filePickerActive = true;
+        miniFileInput.click();
+      });
       miniFileInput.addEventListener('change', (e) => {
+          filePickerActive = false;
           const files = (e.target as HTMLInputElement).files;
           if (!files) return;
           Array.from(files).forEach(file => {
@@ -875,6 +891,7 @@ const posts = (postsData || []).map(post => ({
              reader.readAsDataURL(file);
           });
       });
+      miniFileInput.addEventListener('cancel', () => { filePickerActive = false; });
 
       closeMiniGalleryBtn.addEventListener('click', () => {
           const hasChanges = JSON.stringify(currentMiniImages) !== originalMiniImages || miniCaptionInput.value !== originalMiniCaption;
