@@ -121,12 +121,22 @@ const posts = (postsData || []).map(post => ({
         <div id="mini-gallery-grid" class="mini-gallery-grid"></div>
         <textarea id="mini-caption-input" class="mini-caption-textarea" placeholder="Stack caption..."></textarea>
         <input type="file" id="mini-file-input" multiple accept="image/*" style="display: none;" />
-        <div class="modal-actions" style="margin-top: 0;">
-          <button class="modal-btn" id="close-mini-gallery">Cancel</button>
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="modal-btn" id="mini-import-btn">Import</button>
-            <button class="modal-btn confirm" id="confirm-mini-gallery">Done</button>
-          </div>
+        <div class="modal-actions" style="margin-top: 0; justify-content: flex-end; gap: 1.5rem;">
+          <button class="settings-btn" id="close-mini-gallery" style="color: #666;">CANCEL</button>
+          <button class="settings-btn" id="mini-import-btn" style="color: #666;">IMPORT</button>
+          <button class="settings-btn" id="confirm-mini-gallery">DONE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Discard Modal -->
+    <div class="modal-overlay" id="confirm-discard-modal" style="z-index: 2000;">
+      <div class="modal-content">
+        <h3 class="modal-title">Discard Changes</h3>
+        <p class="modal-caption" style="margin-bottom: 2rem;">All unsaved changes will be discarded. Are you sure you want to cancel?</p>
+        <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 1rem;">
+          <button class="settings-btn" id="cancel-discard-btn" style="color: #666;">NO</button>
+          <button class="settings-btn" id="confirm-discard-btn" style="color: #e11d48;">YES, DISCARD</button>
         </div>
       </div>
     </div>
@@ -344,6 +354,10 @@ const posts = (postsData || []).map(post => ({
       const cancelBtn = document.getElementById('cancel-edits')!;
       const addBtn = document.getElementById('add-new-post')!;
 
+      const confirmDiscardModal = document.getElementById('confirm-discard-modal')!;
+      const confirmDiscardBtn = document.getElementById('confirm-discard-btn')!;
+      const cancelDiscardBtn = document.getElementById('cancel-discard-btn')!;
+
       editBtn.addEventListener('click', () => {
         if (!isEditMode) {
           pendingAction = 'ENTER_EDIT';
@@ -352,9 +366,15 @@ const posts = (postsData || []).map(post => ({
       });
 
       cancelBtn.addEventListener('click', () => {
-        if (confirm("All unsaved changes will be discarded. Are you sure you want to cancel?")) {
-          window.location.reload();
-        }
+        openModal(confirmDiscardModal);
+      });
+
+      confirmDiscardBtn.addEventListener('click', () => {
+        window.location.reload();
+      });
+
+      cancelDiscardBtn.addEventListener('click', () => {
+        closeModal(confirmDiscardModal);
       });
 
       // Update password submission
@@ -565,7 +585,7 @@ const posts = (postsData || []).map(post => ({
               const div = document.createElement('div');
               div.className = 'mini-gallery-item';
               div.innerHTML = `
-                  <img src="${src}" alt="img ${idx}" />
+                  <img src="${src}" alt="img ${idx}" draggable="false" style="pointer-events: none;" />
                   <button class="mini-delete-btn" data-idx="${idx}">×</button>
               `;
               miniGalleryGrid.appendChild(div);
@@ -642,6 +662,7 @@ const posts = (postsData || []).map(post => ({
               return;
           }
 
+          e.preventDefault(); // Prevent native browser navigation to image file
           if (document.body.classList.contains('is-swiping')) return;
           const imagesRaw = wrapper.getAttribute('data-images');
           const captionStr = wrapper.getAttribute('data-caption');

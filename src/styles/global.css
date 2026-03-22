@@ -441,6 +441,10 @@ body.is-editing .sortable-ghost .gallery-item {
   transition: opacity 0.3s;
 }
 
+.error-msg.show {
+  opacity: 1;
+}
+
 /* PhotoSwipe custom caption */
 .pswp__custom-caption {
   position: absolute;
