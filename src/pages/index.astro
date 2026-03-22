@@ -801,7 +801,11 @@ const posts = (postsData || []).map(post => ({
         if (files.length === 0) return;
 
         let token = localStorage.getItem(GITHUB_TOKEN_KEY);
-        if (!token) return;
+        if (!token) {
+          token = prompt('One-time Setup: Please enter your GitHub Personal Access Token:');
+          if (token) localStorage.setItem(GITHUB_TOKEN_KEY, token.trim());
+          else return;
+        }
 
         openModal(progressModal);
         progressStatusText.innerText = 'Uploading images...';
