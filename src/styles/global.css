@@ -723,23 +723,28 @@ html {
 .refresh-btn {
   display: none;
   margin-top: 20px;
-  width: 100%;
-  background: #fff;
-  color: #000;
-  border: none;
-  padding: 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  background: transparent;
+  color: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.6rem 2rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
+  border-radius: 40px;
+  font-family: inherit;
+  width: auto;
 }
 
 .refresh-btn:hover {
-  transform: translateY(-2px);
+  color: white;
+  border-color: rgba(255,255,255,0.6);
 }
 
 .refresh-btn.active {
-  display: block;
+  display: inline-block;
 }
 
 /* Mobile Adjustments */
