@@ -439,8 +439,6 @@ const posts = (postsData || []).map(post => ({
             enterEditMode();
           } else if (pendingAction === 'IMPORT') {
             openModal(importModal);
-          } else if (pendingAction === 'DELETE') {
-            handleGithubAction('DELETE', null, pendingPostId);
           }
         } else {
           errorEl.classList.add('show');
@@ -478,8 +476,8 @@ const posts = (postsData || []).map(post => ({
           return;
         }
         
-        // We'll trigger a workflow to reorder the JSON
-        handleGithubAction('REORDER', JSON.stringify(newOrder), null);
+        // We'll trigger an API call to reorder the JSON
+        handleDirectAction('REORDER', newOrder);
         exitEditMode();
       });
 
@@ -533,8 +531,8 @@ const posts = (postsData || []).map(post => ({
         openModal(importModal);
       });
 
-      // --- GitHub Actions Logic ---
-      async function handleGithubAction(action: string, embedKey: string | null, postId: string | null) {
+      // --- Direct GitHub API Actions Logic ---
+      async function handleDirectAction(action: string, payload: any) {
         let token = localStorage.getItem(GITHUB_TOKEN_KEY);
         if (!token) {
           token = prompt('One-time Setup: Please enter your GitHub Personal Access Token:');
@@ -543,84 +541,78 @@ const posts = (postsData || []).map(post => ({
         }
 
         const repo = 'RossyKenobi/Test.1';
+        openModal(progressModal);
+        
+        const progressTitle = document.getElementById('progress-title')!;
+        if (action === 'DELETE') progressTitle.innerText = 'Deleting Post...';
+        else if (action === 'REORDER') progressTitle.innerText = 'Saving Order...';
+        else progressTitle.innerText = 'Working...';
+        
+        progressStatusText.innerText = 'Fetching latest data...';
+        progressBarInner.style.width = '20%';
+
         try {
-          const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/sync-instagram.yml/dispatches`, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/vnd.github.v3+json',
-              'Authorization': `token ${token}`
-            },
-            body: JSON.stringify({ 
-              ref: 'master',
-              inputs: { action, embed_key: embedKey || '', post_id: postId || '' }
+          const postsRes = await fetch(`https://api.github.com/repos/${repo}/contents/src/data/posts.json`, {
+            headers: { 'Authorization': `token ${token}` }
+          });
+          const postsData = await postsRes.json();
+          const existingPosts = JSON.parse(atob(postsData.content));
+          
+          let updatedPosts = existingPosts;
+          let message = "Update posts.json";
+          
+          if (action === 'DELETE') {
+             const postId = payload;
+             updatedPosts = existingPosts.filter((p: any) => p.id !== postId);
+             message = `Delete post ${postId}`;
+          } else if (action === 'REORDER') {
+             const newOrder = payload;
+             const orderedPosts = newOrder.map((id: string) => existingPosts.find((p: any) => p.id === id)).filter(Boolean);
+             const missingPosts = existingPosts.filter((p: any) => !newOrder.includes(p.id));
+             updatedPosts = [...orderedPosts, ...missingPosts];
+             message = `Reorder gallery posts`;
+          }
+
+          progressStatusText.innerText = 'Updating repository...';
+          progressBarInner.style.width = '60%';
+
+          await fetch(`https://api.github.com/repos/${repo}/contents/src/data/posts.json`, {
+            method: 'PUT',
+            headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' },
+            body: JSON.stringify({
+              message: message,
+              content: btoa(unescape(encodeURIComponent(JSON.stringify(updatedPosts, null, 2)))),
+              sha: postsData.sha,
+              branch: 'master'
             })
           });
-
-          if (res.ok || res.status === 204) {
-             startPollingForProgress(token);
-          } else {
-             const err = await res.json();
-             alert(`Failed: ${err.message}`);
-          }
-        } catch (e: any) { alert(`Error: ${e.message}`); }
-      }
-
-      async function startPollingForProgress(token: string) {
-        let startTime = Date.now();
-        openModal(progressModal);
-        progressStatusText.innerText = 'Triggering synchronization...';
-        progressBarInner.style.width = '10%';
-
-        const poll = async () => {
-          try {
-            const res = await fetch(`https://api.github.com/repos/RossyKenobi/Test.1/actions/runs?workflow=sync-instagram.yml&per_page=1`, {
+          
+          progressStatusText.innerText = 'Waiting for Deploy Action to finish...';
+          progressBarInner.style.width = '80%';
+          
+          const startTime = Date.now();
+          const pollDeploy = async () => {
+            const res = await fetch(`https://api.github.com/repos/${repo}/actions/runs?workflow=deploy.yml&per_page=1`, {
               headers: { 'Authorization': `token ${token}` }
             });
             const data = await res.json();
-            const latestRun = data.workflow_runs[0];
-
-            if (latestRun && new Date(latestRun.created_at).getTime() > startTime - 30000) {
-              const status = latestRun.status;
-              const conclusion = latestRun.conclusion;
-
-              if (status === 'completed') {
-                if (conclusion === 'success') {
-                  progressStatusText.innerText = 'Sync complete. Rebuilding site...';
-                  progressBarInner.style.width = '70%';
-                  // Wait for deploy
-                  setTimeout(pollDeploy, 5000);
+            const latestDeploy = data.workflow_runs[0];
+            
+            if (latestDeploy && new Date(latestDeploy.created_at).getTime() > startTime) {
+              if (latestDeploy.status === 'completed') {
+                  progressBarInner.style.width = '100%';
+                  progressStatusText.innerText = 'Success! Website updated.';
+                  refreshPageBtn.classList.add('active');
                   return;
-                } else {
-                  progressStatusText.innerText = `Sync failed.`;
-                  return;
-                }
               }
-              progressStatusText.innerText = `Processing: ${status}...`;
-              progressBarInner.style.width = '40%';
             }
-            setTimeout(poll, 5000);
-          } catch (e) { setTimeout(poll, 5000); }
-        };
-
-        const pollDeploy = async () => {
-          const res = await fetch(`https://api.github.com/repos/RossyKenobi/Test.1/actions/runs?workflow=deploy.yml&per_page=1`, {
-            headers: { 'Authorization': `token ${token}` }
-          });
-          const data = await res.json();
-          const latestDeploy = data.workflow_runs[0];
-
-          if (latestDeploy && new Date(latestDeploy.created_at).getTime() > startTime) {
-            if (latestDeploy.status === 'completed') {
-              progressBarInner.style.width = '100%';
-              progressStatusText.innerText = 'Success! Website updated.';
-              refreshPageBtn.classList.add('active');
-              return;
-            }
-          }
+            setTimeout(pollDeploy, 5000);
+          };
           setTimeout(pollDeploy, 5000);
-        };
-
-        poll();
+          
+        } catch (e: any) {
+           progressStatusText.innerText = `Error: ${e.message}`;
+        }
       }
 
       // --- Re-initialize Delete Logic for Edit Mode ---
@@ -628,9 +620,10 @@ const posts = (postsData || []).map(post => ({
         btn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          pendingAction = 'DELETE';
           pendingPostId = btn.getAttribute('data-id');
-          openModal(passwordModal);
+          if (confirm('Are you sure you want to delete this stack?')) {
+            handleDirectAction('DELETE', pendingPostId);
+          }
         });
       });
 
