@@ -629,7 +629,7 @@ const posts = (postsData || []).map(post => ({
           else return;
         }
 
-        const repo = 'RossyKenobi/Test.1';
+        const repo = 'RossyKenobi/my-gallery';
         openModal(progressModal);
         
         const progressTitle = document.getElementById('progress-title')!;
@@ -784,7 +784,7 @@ const posts = (postsData || []).map(post => ({
                   }
 
                   closeModal(miniGalleryModal);
-                  const repo = 'RossyKenobi/Test.1';
+                  const repo = 'RossyKenobi/my-gallery';
                   const progressTitle = document.getElementById('progress-title')!;
                   progressTitle.innerText = 'Removing Image...';
                   openModal(progressModal);
@@ -928,7 +928,7 @@ const posts = (postsData || []).map(post => ({
           }
 
           closeModal(miniGalleryModal);
-          const repo = 'RossyKenobi/Test.1';
+          const repo = 'RossyKenobi/my-gallery';
           const progressTitle = document.getElementById('progress-title')!;
           progressTitle.innerText = 'Updating Stack...';
           openModal(progressModal);
@@ -1120,7 +1120,7 @@ const posts = (postsData || []).map(post => ({
         progressStatusText.innerText = 'Uploading images...';
         progressBarInner.style.width = '10%';
 
-        const repo = 'RossyKenobi/Test.1';
+        const repo = 'RossyKenobi/my-gallery';
         const timestamp = new Date().getTime();
         const postId = `local-${timestamp}`;
         const imagePaths: string[] = [];

@@ -13,7 +13,7 @@ A minimalist, high-performance photography portfolio built with Astro and integr
 ## 🚀 Live Product
 
 Access the live portfolio at:
-**[https://RossyKenobi.github.io/Test.1/](https://RossyKenobi.github.io/Test.1/)**
+**[https://RossyKenobi.github.io/my-gallery/](https://RossyKenobi.github.io/my-gallery/)**
 
 ## 🛠️ Technology Stack
 
