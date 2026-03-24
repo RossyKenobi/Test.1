@@ -20,8 +20,8 @@ const posts = (postsData || []).map(post => ({
     <title>Fan's Gallery</title>
     <!-- PhotoSwipe CSS -->
     <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.css">
-    <!-- Montserrat Typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Mixed Typography: Montserrat (UI) & Cormorant Garamond (Editorial) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   </head>
   <body>
     <!-- Transparent Minimalist Navigation -->
@@ -329,8 +329,13 @@ const posts = (postsData || []).map(post => ({
             heroOverlay.style.backdropFilter = `blur(${progress * 20}px)`;
             heroOverlay.style.webkitBackdropFilter = `blur(${progress * 20}px)`;
 
-            // 2. Progressive Nav Blur (Uniform Glass)
+            // 2. Gradual Nav Blur (Fixed mapping for smooth transition)
             if (minimalNav) {
+                const navProgress = Math.min(scrollY / 150, 1); // Full effect by 150px
+                minimalNav.style.backgroundColor = `rgba(0, 0, 0, ${navProgress * 0.5})`;
+                minimalNav.style.backdropFilter = `blur(${navProgress * 20}px)`;
+                minimalNav.style.webkitBackdropFilter = `blur(${navProgress * 20}px)`;
+                
                 if (scrollY > 50) {
                     minimalNav.classList.add('is-scrolled');
                 } else {

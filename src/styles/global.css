@@ -17,9 +17,9 @@ header {
   display: none; /* Removed the old header */
 }
 
-/* Minimalist Navigation - Reverted to Original State */
+/* Minimalist Navigation - Enhanced for dynamic transition */
 .minimal-nav {
-  position: fixed; /* Keep top bar fixed */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -31,12 +31,16 @@ header {
   z-index: 100;
   box-sizing: border-box;
   pointer-events: none;
+  /* Smooth transition for when JS isn't immediately firing */
+  transition: backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+  
+  /* Gradual bottom edge fade for high-end look */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
 }
 
 .minimal-nav.is-scrolled {
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* JS handles the linear transition for background and blur */
   pointer-events: auto;
 }
 
@@ -100,22 +104,26 @@ header {
   position: relative;
   z-index: 2;
   color: white;
+  width: 100%;
+  padding: 0 2rem;
 }
 
 .hero-title {
-  font-size: clamp(3rem, 10vw, 8rem);
-  width: 50vw; /* Occupy half the screen width */
-  margin: 0 auto 1rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.5rem, 5vw, 4.5rem); /* Scaled down for elegance */
+  margin: 0 auto 0.5rem;
   line-height: 1.1;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
+  font-weight: 700; /* Bold as requested */
+  text-transform: none; /* Serifs often look better in normal case */
+  letter-spacing: -0.01em;
 }
 
 .hero-subtitle {
-  font-size: 1.25rem;
-  font-weight: 300;
-  opacity: 0.8;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+  font-style: italic; /* Adding elegance to subtitle */
+  opacity: 0.9;
 }
 
 .gallery-grid {
