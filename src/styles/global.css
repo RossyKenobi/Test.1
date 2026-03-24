@@ -7,7 +7,7 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Cormorant Garamond', serif;
   background-color: transparent; /* Allow fixed hero image to show through */
   color: var(--text-color);
   -webkit-font-smoothing: antialiased;
@@ -23,19 +23,23 @@ header {
   top: 0;
   left: 0;
   width: 100%;
-  padding: 2rem 4rem 4rem; /* Extends the blur downwards */
+  padding: 2.5rem 4rem 1.5rem; 
   background: transparent;
-  backdrop-filter: blur(0px);
-  -webkit-backdrop-filter: blur(0px);
-  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-end;
   z-index: 100;
   box-sizing: border-box;
   pointer-events: none;
-  /* Removed CSS transition on background to boost requestAnimationFrame manual scrolling perf */
+  transition: background-color 0.4s ease, backdrop-filter 0.4s ease, -webkit-backdrop-filter 0.4s ease;
+}
+
+.minimal-nav.is-scrolled {
+  background-color: rgba(14, 14, 14, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  pointer-events: auto;
 }
 
 /* Removed static .scrolled class as JS now handles progression */
