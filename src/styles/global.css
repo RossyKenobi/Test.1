@@ -711,6 +711,34 @@ html {
 }
 
 @media (max-width: 768px) {
+  /* Navbar Mobile Optimization */
+  .minimal-nav {
+    padding: 1.5rem 1.5rem; /* More compact padding on mobile */
+    align-items: baseline; /* Align Bottom of text precisely */
+  }
+  .nav-brand {
+    font-size: 0.9rem; /* Slightly smaller to fit */
+  }
+  .nav-link {
+    font-size: 0.8rem; /* Slightly smaller to fit */
+    letter-spacing: 0.1em;
+  }
+  .nav-links {
+    gap: 1.2rem; /* Reduced gap to prevent overlap */
+  }
+
+  /* Hero Title Mobile Optimization */
+  .hero-title {
+    width: 66vw; /* Occupy approx 2/3 of screen width */
+    white-space: nowrap; /* Strictly prohibit wrapping */
+    font-size: 8.5vw; /* Auto-scale based on viewport width */
+    margin-bottom: 0.2rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.1rem; /* Adjust subtitle for mobile proportions */
+  }
+
   .contact-email a {
     font-size: 1.5rem;
   }
