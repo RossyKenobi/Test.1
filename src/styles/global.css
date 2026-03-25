@@ -739,14 +739,15 @@ html {
   .hero-content {
     height: 100svh;
     justify-content: center;
-    padding-bottom: 200px; /* Forcefully pull content high up */
+    padding-bottom: 100px; /* Pull titles up a bit, but less than before */
   }
 
-  /* Target the divider very aggressively */
+  /* Target the divider to strictly sit at the bottom of the svh area */
   body .hero-divider {
-    bottom: 180px !important; /* Strictly align with user's red line */
-    background: rgba(255, 255, 255, 0.4) !important; /* More contrast */
-    opacity: 1 !important; /* Force visibility */
+    bottom: 0 !important; /* This matches the top edge of the browser nav in 100svh */
+    background: rgba(255, 255, 255, 0.2) !important;
+    opacity: 1 !important;
+    width: calc(100% - 8rem);
   }
 
   .hero-title {
@@ -761,7 +762,7 @@ html {
   }
 
   .scroll-indicator {
-    bottom: 215px !important; /* Arrow tip sits just above the line */
+    bottom: 30px !important; /* Sit strictly in the red-box area just above the divider */
     z-index: 11;
   }
 
