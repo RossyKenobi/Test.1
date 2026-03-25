@@ -782,7 +782,8 @@ html {
   }
 
   .contact-section {
-    padding-top: 1.5rem !important; /* Tighter transition */
+    padding-top: 3rem !important; /* Balanced with the bottom gap */
+    padding-bottom: 3.5rem !important; /* Visual matching with icons area */
   }
 
   .contact-email a {
