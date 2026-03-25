@@ -51,10 +51,11 @@ header {
 }
 
 .nav-brand {
-  font-weight: 700;
-  font-size: 1.25rem;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  font-size: 1.1rem; /* Harmonized with links */
+  letter-spacing: 0.15em;
   color: #fff;
+  line-height: 1;
 }
 
 .nav-links {
@@ -65,11 +66,12 @@ header {
 .nav-link {
   color: #fff;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 1.1rem; /* Harmonized with brand */
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   opacity: 0.7;
   transition: opacity 0.3s ease;
+  font-weight: 500;
 }
 
 .nav-link:hover {
@@ -105,25 +107,74 @@ header {
   z-index: 2;
   color: white;
   width: 100%;
-  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
 }
 
 .hero-title {
   font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(2.5rem, 5vw, 4.5rem); /* Scaled down for elegance */
-  margin: 0 auto 0.5rem;
-  line-height: 1.1;
-  font-weight: 700; /* Bold as requested */
-  text-transform: none; /* Serifs often look better in normal case */
-  letter-spacing: -0.01em;
+  font-size: clamp(3.5rem, 8vw, 10rem); /* Massive editorial scale */
+  width: 50vw; /* Occupy half the screen width */
+  margin: 0 auto 1.5rem;
+  line-height: 1;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .hero-subtitle {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 500;
-  font-style: italic; /* Adding elegance to subtitle */
-  opacity: 0.9;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Scroll Indicator */
+.scroll-indicator {
+  position: absolute;
+  bottom: 4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 0.4em;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+}
+
+.scroll-arrow {
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent);
+  position: relative;
+  animation: scroll-bounce 2s infinite ease-in-out;
+}
+
+.scroll-arrow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
 }
 
 .gallery-grid {
