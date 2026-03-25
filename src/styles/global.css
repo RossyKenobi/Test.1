@@ -738,6 +738,10 @@ html {
     padding-bottom: 80px; /* Move content up to avoid bottom nav collision */
   }
 
+  .hero-divider {
+    bottom: 80px !important; /* Move line up to browser nav top edge */
+  }
+
   .hero-title {
     width: 80vw; /* Occupy approx 2/3 to 3/4 screen width visually */
     white-space: nowrap;
