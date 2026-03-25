@@ -173,7 +173,6 @@ header {
   max-width: 1800px;
   margin: 0 auto;
   align-items: start;
-  background-color: var(--bg-color); /* Fix white background issue */
 }
 
 @media (min-width: 640px) {
