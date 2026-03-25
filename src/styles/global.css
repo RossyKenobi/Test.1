@@ -158,10 +158,10 @@ header {
   opacity: 0.6;
 }
 
-@keyframes scroll-slide {
-  0% { transform: translateY(0); opacity: 0.6; }
-  50% { transform: translateY(8px); opacity: 1; }
-  100% { transform: translateY(0); opacity: 0.6; }
+@media (max-width: 768px) {
+  .scroll-indicator {
+    bottom: 6rem; /* Move up on mobile to be clearly visible above nav */
+  }
 }
 
 .gallery-grid {
@@ -173,6 +173,7 @@ header {
   max-width: 1800px;
   margin: 0 auto;
   align-items: start;
+  background-color: var(--bg-color); /* Fix white background issue */
 }
 
 @media (min-width: 640px) {
@@ -727,11 +728,21 @@ html {
     gap: 1.2rem; /* Reduced gap to prevent overlap */
   }
 
-  /* Hero Title Mobile Optimization */
+  /* Hero Section Mobile Optimization */
+  .hero-section {
+    height: 100svh; /* Use small viewport height to account for mobile browser UI */
+  }
+
+  .hero-content {
+    height: 100svh;
+    justify-content: center;
+    padding-bottom: 80px; /* Move content up to avoid bottom nav collision */
+  }
+
   .hero-title {
-    width: 66vw; /* Occupy approx 2/3 of screen width */
-    white-space: nowrap; /* Strictly prohibit wrapping */
-    font-size: 8.5vw; /* Auto-scale based on viewport width */
+    width: 80vw; /* Occupy approx 2/3 to 3/4 screen width visually */
+    white-space: nowrap;
+    font-size: 11.5vw; /* Increased from 8.5vw for strict 2/3 feel */
     margin-bottom: 0.2rem;
   }
   
