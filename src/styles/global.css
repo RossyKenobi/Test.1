@@ -739,12 +739,12 @@ html {
   .hero-content {
     height: 100svh;
     justify-content: center;
-    padding-bottom: 150px; /* Middle ground between V5 (200px) and V6 (100px) */
+    padding-bottom: 110px; /* Adjust to keep titles balanced */
   }
 
-  /* Target the divider to sit at the middle ground */
+  /* Reduce gap between line and stack below */
   body .hero-divider {
-    bottom: 90px !important; /* Average of 180px and 0px */
+    bottom: 45px !important; /* Halved from 90px to bring it closer to gallery */
     background: rgba(255, 255, 255, 0.2) !important;
     opacity: 1 !important;
     width: calc(100% - 8rem);
@@ -762,8 +762,12 @@ html {
   }
 
   .scroll-indicator {
-    bottom: 125px !important; /* Average of 215px and 30px + small gap adjustment */
+    bottom: 80px !important; /* Adjusted to sit 35px above the new line position */
     z-index: 11;
+  }
+
+  .gallery-grid {
+    padding-top: 2rem !important; /* Reduce gap from the gallery side as well */
   }
 
   .contact-email a {
