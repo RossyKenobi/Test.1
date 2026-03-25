@@ -735,11 +735,13 @@ html {
   .hero-content {
     height: 100svh;
     justify-content: center;
-    padding-bottom: 120px; /* Increased from 80px to pull content higher */
+    padding-bottom: 200px; /* Forcefully pull content high up */
   }
 
-  .hero-divider {
-    bottom: 110px !important; /* Move line significantly up above browser nav */
+  /* Target the divider very aggressively */
+  body .hero-divider {
+    bottom: 180px !important; /* Move line very high to reach the red-line position */
+    background: rgba(255, 255, 255, 0.3) !important; /* Make it more visible */
   }
 
   .hero-title {
@@ -754,7 +756,7 @@ html {
   }
 
   .scroll-indicator {
-    bottom: 140px !important; /* Move arrow above the divider line */
+    bottom: 210px !important; /* Keep arrow above the new divider position */
   }
 
   .contact-email a {
