@@ -735,22 +735,26 @@ html {
   .hero-content {
     height: 100svh;
     justify-content: center;
-    padding-bottom: 80px; /* Move content up to avoid bottom nav collision */
+    padding-bottom: 120px; /* Increased from 80px to pull content higher */
   }
 
   .hero-divider {
-    bottom: 80px !important; /* Move line up to browser nav top edge */
+    bottom: 110px !important; /* Move line significantly up above browser nav */
   }
 
   .hero-title {
-    width: 80vw; /* Occupy approx 2/3 to 3/4 screen width visually */
+    width: 80vw;
     white-space: nowrap;
-    font-size: 11.5vw; /* Increased from 8.5vw for strict 2/3 feel */
+    font-size: 11.5vw;
     margin-bottom: 0.2rem;
   }
   
   .hero-subtitle {
-    font-size: 1.1rem; /* Adjust subtitle for mobile proportions */
+    font-size: 1.1rem;
+  }
+
+  .scroll-indicator {
+    bottom: 140px !important; /* Move arrow above the divider line */
   }
 
   .contact-email a {
