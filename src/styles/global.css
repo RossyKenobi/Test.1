@@ -637,7 +637,7 @@ body.is-editing .sortable-ghost .gallery-item {
   padding: 1rem;
   font-family: inherit;
   font-size: 0.8rem;
-  min-height: 80px;
+  min-height: 120px;
   resize: vertical;
   margin-bottom: 2rem;
   border-radius: 4px;
