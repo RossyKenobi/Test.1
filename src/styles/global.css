@@ -717,9 +717,9 @@ html {
 @media (max-width: 768px) {
   /* Navbar Mobile Optimization */
   .minimal-nav {
-    padding: 0.6rem 1.2rem; /* Tighter padding for mobile pill */
+    padding: 0.4rem 1.2rem; /* Reduced thickness for mobile */
     top: 1rem;
-    width: 92%; /* Slightly wider but centered */
+    width: 92%;
     max-width: none;
     align-items: center;
   }
@@ -877,9 +877,6 @@ html {
 
 /* Mobile Adjustments */
 @media (max-width: 640px) {
-  .minimal-nav {
-    padding: 1.5rem 1.5rem 3rem;
-  }
   .gallery-grid {
     padding: 2rem 1.5rem 1rem;
     column-gap: 1.5rem;
