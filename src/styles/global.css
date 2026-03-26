@@ -40,7 +40,7 @@ header {
 }
 
 .minimal-nav.is-scrolled {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: transparent;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
@@ -722,6 +722,9 @@ html {
     width: 92%;
     max-width: none;
     align-items: center;
+  }
+  .minimal-nav.is-scrolled {
+    border-color: transparent;
   }
   .nav-brand {
     font-size: 0.9rem;

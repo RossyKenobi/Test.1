@@ -347,7 +347,7 @@ const posts = (postsData || []).map(post => ({
                 const navProgress = Math.min(scrollY / navTransitionThreshold, 1);
                 
                 // Gradual background and blur
-                minimalNav.style.backgroundColor = `rgba(0, 0, 0, ${navProgress * 0.4})`; 
+                minimalNav.style.backgroundColor = `rgba(0, 0, 0, ${navProgress * 0.3})`; 
                 minimalNav.style.backdropFilter = `blur(${navProgress * 20}px)`; 
                 minimalNav.style.webkitBackdropFilter = `blur(${navProgress * 20}px)`; 
                 
