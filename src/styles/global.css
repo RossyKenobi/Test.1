@@ -17,31 +17,31 @@ header {
   display: none; /* Removed the old header */
 }
 
-/* Minimalist Navigation - Enhanced for dynamic transition */
+/* Minimalist Navigation - Refined Pill Shape */
 .minimal-nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  padding: 2rem 4rem; 
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  padding: 0.75rem 3.5rem;
   background: transparent;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   z-index: 100;
   box-sizing: border-box;
-  pointer-events: none;
-  /* Smooth transition for when JS isn't immediately firing */
-  transition: backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+  pointer-events: auto;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0); /* Transparent initially */
   
-  /* Gradual bottom edge fade for high-end look */
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
+  /* Smooth transition for when JS isn't firing or for state classes */
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .minimal-nav.is-scrolled {
-  /* JS handles the linear transition for background and blur */
-  pointer-events: auto;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 /* Removed static .scrolled class as JS now handles progression */
@@ -60,7 +60,7 @@ header {
 
 .nav-links {
   display: flex;
-  gap: 2rem;
+  gap: 3.5rem;
 }
 
 .nav-link {
@@ -717,18 +717,11 @@ html {
 @media (max-width: 768px) {
   /* Navbar Mobile Optimization */
   .minimal-nav {
-    padding: 1.5rem 1.5rem; /* More compact padding on mobile */
-    align-items: baseline; /* Align Bottom of text precisely */
-  }
-  .nav-brand {
-    font-size: 0.9rem; /* Slightly smaller to fit */
-  }
-  .nav-link {
-    font-size: 0.8rem; /* Slightly smaller to fit */
-    letter-spacing: 0.1em;
-  }
-  .nav-links {
-    gap: 1.2rem; /* Reduced gap to prevent overlap */
+    padding: 0.6rem 1.5rem; /* More compact for mobile pill */
+    top: 1rem;
+    width: calc(100% - 2rem); /* Keep some margin on sides */
+    max-width: none;
+    align-items: center;
   }
 
   /* Hero Section Mobile Optimization */
