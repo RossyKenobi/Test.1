@@ -76,6 +76,23 @@ The portfolio follows a **Minimalist Luxury** aesthetic:
 
 ---
 
+## 📝 Changelog
+
+### v1.1.0 
+- **UI Modernization**: Upgraded all modals, thumbnails, and interactive elements to a `24px` border radius, creating a consistent "pill-shaped" aesthetic mirroring the top navigation bar.
+- **Bespoke Desktop Gallery Layout**: Replaced the automated JS masonry with a strict, asymmetric CSS Grid layout on desktop. Images are now strictly aligned flush top-to-bottom automatically mapping horizontal (`16:9`) and vertical (`4:5`) content sequentially.
+- **R2 Cloud Storage Migration**: Fully transitioned the image upload pipeline from GitHub API to Cloudflare R2 bucket storage via presigned URLs and serverless functions, massively improving reliability and bypassing rate-limits.
+
+### v1.0.8 
+- Addressed deployment cache issues causing outdated layouts to be served.
+- Implemented robust error handling and diagnostics for the image upload APIs.
+
+### v1.0.5
+- Mobile-responsive adjustments ensuring precise vertical alignment of the Hero divider and scroll indicator with the mobile address bar.
+- Typography standardization targeting 'Montserrat' and unified 4-line height caption textareas across all modes.
+
+---
+
 > [!NOTE]
 > This project is designed for photographers who want the speed of a static site with the convenience of a CMS, hosted completely for free.
 

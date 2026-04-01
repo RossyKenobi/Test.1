@@ -80,7 +80,7 @@ import '../styles/global.css';
     </section>
     
     <footer style="padding: 2rem 0 1rem; text-align: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; letter-spacing: 0.1rem;">
-      &copy; 2026 THE GALLERY BY F.Y. | v1.0.5
+      &copy; 2026 THE GALLERY BY F.Y. | v1.1.0
     </footer>
 
     <!-- Password Modal (Minimalist) -->
@@ -1028,19 +1028,13 @@ import '../styles/global.css';
         });
       }
 
-      // --- Grid Masonry ---
+      // --- Grid Masonry (Disabled for structured CSS layout) ---
       window.resizeGridItem = function(item) {
-        if (!item) return;
-        const target = item.querySelector('.gallery-item');
-        if (!target) return;
-        const contentHeight = target.getBoundingClientRect().height;
-        const rowSpan = Math.ceil((contentHeight + 64) / 10);
-        item.style.gridRowEnd = 'span ' + rowSpan;
+        // No-op: Layout is handled purely by CSS Grid + Aspect Ratio now
       };
 
       window.resizeAllGridItems = function() {
-        const allItems = document.querySelectorAll('.gallery-item-wrapper');
-        allItems.forEach(item => window.resizeGridItem(item));
+        // No-op
       };
 
       window.addEventListener('load', window.resizeAllGridItems);

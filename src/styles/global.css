@@ -167,8 +167,8 @@ header {
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
-  grid-auto-rows: 10px;
   column-gap: 4rem;
+  row-gap: 4rem;
   padding: 4rem 4rem 2rem;
   max-width: 1800px;
   margin: 0 auto;
@@ -180,11 +180,34 @@ header {
 }
 
 @media (min-width: 1024px) {
-  .gallery-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (min-width: 1280px) {
-  .gallery-grid { grid-template-columns: repeat(4, 1fr); }
+  .gallery-grid {
+    --grid-gap: 4rem;
+    grid-template-columns: calc((100% - 1.8 * var(--grid-gap)) / 1.9) calc(((100% - 1.8 * var(--grid-gap)) / 1.9) * 0.9 + 0.8 * var(--grid-gap));
+  }
+  
+  .gallery-item-wrapper:nth-child(5n + 1),
+  .gallery-item-wrapper:nth-child(5n + 3) {
+    grid-column: 1;
+    aspect-ratio: 16 / 9;
+  }
+  
+  .gallery-item-wrapper:nth-child(5n + 2) {
+    grid-column: 2;
+    grid-row: span 2;
+  }
+  
+  .gallery-item-wrapper:nth-child(5n + 4) {
+    grid-column: 1;
+    aspect-ratio: 16 / 9;
+  }
+  
+  .gallery-item-wrapper:nth-child(5n + 5) {
+    grid-column: 2;
+    aspect-ratio: 16 / 9;
+  }
+  
+  .gallery-item { height: 100%; }
+  .gallery-item img { height: 100%; }
 }
 
 .gallery-item-wrapper {
@@ -202,6 +225,8 @@ header {
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   display: block;
+  border-radius: 24px;
+  height: auto;
 }
 
 .gallery-item:hover {
@@ -269,7 +294,7 @@ header {
 body.is-editing .gallery-item {
   border: 1px dashed rgba(255, 255, 255, 0.3);
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 24px;
   box-sizing: border-box;
 }
 
@@ -407,6 +432,7 @@ body.is-editing .sortable-ghost .gallery-item {
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
   padding: 3rem;
   width: 100%;
   max-width: 440px;
@@ -529,7 +555,7 @@ body.is-editing .sortable-ghost .gallery-item {
 
 /* PhotoSwipe Peeking Effect */
 .pswp__img {
-  border-radius: 8px;
+  border-radius: 24px;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease, opacity 0.4s ease;
   will-change: transform, opacity, filter;
 }
@@ -566,7 +592,7 @@ body.is-editing .sortable-ghost .gallery-item {
 
 .embed-wrapper iframe {
   width: 100% !important;
-  border-radius: 8px !important;
+  border-radius: 24px !important;
 }
 
 /* Mini Gallery Edit Modal */
@@ -584,7 +610,7 @@ body.is-editing .sortable-ghost .gallery-item {
   position: relative;
   width: 100%;
   height: max-content;
-  border-radius: 8px;
+  border-radius: 24px;
   overflow: hidden;
   cursor: grab;
   box-sizing: border-box;
