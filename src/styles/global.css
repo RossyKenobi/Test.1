@@ -357,9 +357,13 @@ body.is-editing .sortable-ghost .gallery-item {
 .gallery-bottom-bar {
   display: flex;
   justify-content: flex-end;
-  padding: 0 4rem 2rem;
+  align-items: center; /* Triggers mathematical vertical centering across the physical height */
+  padding: 0 4rem; /* Zero vertical padding */
+  height: 4rem; /* The strict exact gap expansion requested (4rem) */
+  margin: -3rem auto 0; /* Absorbs the 3rem invisible grid barrier to seamlessly extend the gap without blowing it up */
   max-width: 1800px;
-  margin: 0 auto;
+  position: relative;
+  z-index: 10;
 }
 
 .gallery-divider {
@@ -811,6 +815,14 @@ html {
     margin-top: -7.75rem !important; /* Continued anti-gravity grid pull logically mirroring the grey line (+1.5rem) */
     position: relative;
     z-index: 5;
+  }
+
+  .gallery-bottom-bar {
+    padding: 0 3rem; /* Update sides to 3rem to match grid and divider edges */
+    margin-top: -1.5rem !important; /* Sinks into the mobile 1.5rem invisible grid barrier */
+    height: 2.8rem !important; /* Scales down exactly proportionate to mobile */
+    position: relative;
+    z-index: 10;
   }
 
   .gallery-divider:not(.hero-divider) {
