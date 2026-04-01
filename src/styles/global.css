@@ -775,9 +775,11 @@ html {
   /* Hero Section Mobile Optimization */
   .hero-section {
     height: 100svh; /* Use small viewport height to account for mobile browser UI */
+    overflow: visible !important; /* Crucial: Allow the grey line to visibly slide under the fold instead of being clipped */
   }
 
   .hero-content {
+    box-sizing: border-box; /* Crucial: Locks container strictly to 100svh, forcing padding strictly inwards */
     height: 100svh;
     justify-content: center;
     padding-bottom: 150px; /* Reverted to V7 balance */
@@ -795,7 +797,11 @@ html {
   }
 
   .scroll-indicator {
-    bottom: calc(1.5rem + 150px) !important; /* Compensate for the 150px hero-content padding-bottom driving absolute anchors out of flow */
+    bottom: 0.5rem !important; /* Push arrow tip down tight against the viewport boundary */
+  }
+
+  body .hero-divider {
+    bottom: -1rem !important; /* Precisely 1.5rem (24px) structural gap below the arrow, leaving it just outside initial iOS screen bounds */
   }
 
   .gallery-grid {
