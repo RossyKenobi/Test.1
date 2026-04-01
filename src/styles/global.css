@@ -794,6 +794,10 @@ html {
     font-size: 1.1rem;
   }
 
+  .scroll-indicator {
+    bottom: calc(1.5rem + 150px) !important; /* Compensate for the 150px hero-content padding-bottom driving absolute anchors out of flow */
+  }
+
   .gallery-grid {
     padding-top: 2rem !important; /* Restored natural flow distance */
     padding-bottom: 1.5rem !important; /* Tighter transition */
