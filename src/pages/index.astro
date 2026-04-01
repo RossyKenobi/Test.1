@@ -1008,10 +1008,10 @@ import '../styles/global.css';
       window.addEventListener('load', window.resizeAllGridItems);
       window.addEventListener('resize', window.resizeAllGridItems);
 
-      // --- Initial Load: Fetch posts from R2 ---
+      // --- Initial Load: Fetch posts from R2 via our API (same-origin, no CORS) ---
       async function loadGallery() {
         try {
-          const res = await fetch(`${R2_CDN}/posts.json?t=${Date.now()}`);
+          const res = await fetch(`${POSTS_API}?t=${Date.now()}`);
           if (!res.ok) throw new Error('Failed to load gallery data');
           allPosts = await res.json();
           renderGallery();
