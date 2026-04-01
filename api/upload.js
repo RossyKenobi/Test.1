@@ -1,5 +1,4 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const s3 = new S3Client({
   region: 'auto',
@@ -12,31 +11,43 @@ const s3 = new S3Client({
 
 const BUCKET = 'my-gallery-images';
 
+// Increase body size limit to 50MB for image uploads
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { filename, contentType } = req.body;
+    const { filename, contentType, fileData } = req.body;
 
-    if (!filename) {
-      return res.status(400).json({ error: 'filename is required' });
+    if (!filename || !fileData) {
+      return res.status(400).json({ error: 'filename and fileData are required' });
     }
 
+    // fileData is base64-encoded image from frontend
+    const buffer = Buffer.from(fileData, 'base64');
     const key = `posts/${filename}`;
-    const command = new PutObjectCommand({
+
+    await s3.send(new PutObjectCommand({
       Bucket: BUCKET,
       Key: key,
+      Body: buffer,
       ContentType: contentType || 'image/jpeg',
-    });
+    }));
 
-    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
     const finalImageUrl = `https://img.nitakupenda.eu.cc/${key}`;
 
-    return res.status(200).json({ uploadUrl, finalImageUrl });
+    return res.status(200).json({ finalImageUrl });
   } catch (err) {
-    console.error('Upload presign error:', err);
+    console.error('Upload error:', err);
     return res.status(500).json({ error: err.message });
   }
 }
