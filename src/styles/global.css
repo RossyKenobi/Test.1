@@ -924,6 +924,7 @@ html {
   .gallery-grid {
     padding: 2rem 3rem 1rem; /* Increase mobile side padding to visually shrink large mobile photos (3rem * 2 = 6rem, matches hero scale) */
     column-gap: 1.5rem;
+    row-gap: 1.35rem; /* Exactly matched to the 13.5% ratio of desktop gap-to-horizontal-photo-height */
   }
   .gallery-bottom-bar {
     padding: 0 1.5rem 1.5rem;
