@@ -798,17 +798,17 @@ html {
   }
 
   .scroll-indicator {
-    bottom: 8.25rem !important; /* Shifted UP by 2 arrow lengths (100px) to clear aggressive Safari bottom UI */
+    bottom: 8rem !important; /* Micro-adjusted to exactly 8rem as requested */
   }
 
   body .hero-divider {
-    bottom: 5.75rem !important; /* Shifted UP identically */
+    bottom: 7.25rem !important; /* Raised by precisely half an arrow length (1.5rem/24px) */
   }
 
   .gallery-grid {
     padding-top: 2rem !important; /* Restored natural flow distance */
     padding-bottom: 1.5rem !important; /* Tighter transition */
-    margin-top: -6.25rem !important; /* Negative offset precisely counteracts the 100px lift so photos still start exactly underneath the grey line */
+    margin-top: -7.75rem !important; /* Continued anti-gravity grid pull logically mirroring the grey line (+1.5rem) */
     position: relative;
     z-index: 5;
   }
