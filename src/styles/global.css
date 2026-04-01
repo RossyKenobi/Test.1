@@ -818,9 +818,9 @@ html {
   }
 
   .gallery-bottom-bar {
-    padding: 0 3rem; /* Update sides to 3rem to match grid and divider edges */
-    margin-top: -1.5rem !important; /* Sinks into the mobile 1.5rem invisible grid barrier */
-    height: 2.8rem !important; /* Scales down exactly proportionate to mobile */
+    padding: 0 4rem !important; /* Matched 4rem padding to identically align with tablet-width grid and line edges */
+    margin-top: -1.5rem !important; /* Sinks perfectly into the mobile 1.5rem hidden shadow */
+    height: 4rem !important; /* Extends exactly 4rem expansion for the Admin gap on mobile */
     position: relative;
     z-index: 10;
   }
@@ -937,7 +937,7 @@ html {
     row-gap: 1.35rem; /* Exactly matched to the 13.5% ratio of desktop gap-to-horizontal-photo-height */
   }
   .gallery-bottom-bar {
-    padding: 0 3rem 1.5rem; /* Update sides to 3rem to match grid and divider edges */
+    padding: 0 3rem !important; /* Clean horizontal scaling: 3rem strictly binds it to the 640px layout without breaking vertical flex-centering */
   }
   .import-trigger-wrapper {
     padding: 0 3rem 3rem; /* Same alignment here */
