@@ -779,10 +779,9 @@ html {
   }
 
   .hero-content {
-    box-sizing: border-box; /* Crucial: Locks container strictly to 100svh, forcing padding strictly inwards */
     height: 100svh;
     justify-content: center;
-    padding-bottom: 150px; /* Reverted to V7 balance */
+    /* Removed padding-bottom entirely to neutralize Safari's absolute-position flex bug */
   }
 
   .hero-title {
@@ -790,10 +789,12 @@ html {
     white-space: nowrap;
     font-size: 11.5vw;
     margin-bottom: 0.2rem;
+    transform: translateY(-75px); /* V7 balance: Pull text up exactly half of the 150px offset */
   }
   
   .hero-subtitle {
     font-size: 1.1rem;
+    transform: translateY(-75px); /* Follow title up */
   }
 
   .scroll-indicator {
