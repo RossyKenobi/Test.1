@@ -798,17 +798,17 @@ html {
   }
 
   .scroll-indicator {
-    bottom: 2rem !important; /* Raised up into safe visual area, free of bottom browser UI */
+    bottom: 8.25rem !important; /* Shifted UP by 2 arrow lengths (100px) to clear aggressive Safari bottom UI */
   }
 
   body .hero-divider {
-    bottom: -0.5rem !important; /* Lifted up strictly to maintain the extremely tight desktop 2.5rem proportional gap with arrow, resting exactly on the lower fold threshold */
+    bottom: 5.75rem !important; /* Shifted UP identically */
   }
 
   .gallery-grid {
     padding-top: 2rem !important; /* Restored natural flow distance */
     padding-bottom: 1.5rem !important; /* Tighter transition */
-    margin-top: 0 !important; /* Removed overlap-causing negative offset */
+    margin-top: -6.25rem !important; /* Negative offset precisely counteracts the 100px lift so photos still start exactly underneath the grey line */
     position: relative;
     z-index: 5;
   }
