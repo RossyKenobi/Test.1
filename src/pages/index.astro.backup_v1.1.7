@@ -839,20 +839,8 @@ import '../styles/global.css';
         const timestamp = Date.now();
         const postId = `local-${timestamp}`;
         const imageUrls = [];
-        let isPortrait = false;
 
         try {
-          // Pre-calculate physical orientation of the primary image for perfect grid masonry placement
-          if (files[0]) {
-            const img = new Image();
-            img.src = URL.createObjectURL(files[0]);
-            await new Promise(r => {
-               img.onload = r;
-               img.onerror = r; 
-            });
-            isPortrait = (img.naturalHeight > img.naturalWidth);
-          }
-
           for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const fileName = `p_local_${timestamp}_${i}.jpg`;
@@ -872,7 +860,6 @@ import '../styles/global.css';
             images: imageUrls,
             hidden: false,
             category: 'General',
-            isPortrait: isPortrait,
           };
 
           const updatedPosts = [...allPosts, newPost];
@@ -906,11 +893,8 @@ import '../styles/global.css';
         const imagesData = JSON.stringify(images).replace(/"/g, '&quot;');
         const captionData = (post.caption || '').replace(/"/g, '&quot;');
 
-        // Graceful degradation: If old metadata is completely missing the orientation flag (undefined), default to landscape safely.
-        const orientationClass = post.isPortrait === true ? 'is-portrait' : 'is-landscape';
-
         return `
-          <div class="gallery-item-wrapper ${orientationClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-needs-check="${post.isPortrait === undefined}">
+          <div class="gallery-item-wrapper" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}">
             <a href="${thumbnail}" class="gallery-item" data-pswp-src="${thumbnail}">
               <img src="${thumbnail}" alt="${post.caption || 'Gallery Post'}" loading="lazy" decoding="async" />
               <button class="delete-btn" aria-label="Delete Post" data-id="${post.id}" onclick="event.stopPropagation();">
@@ -945,19 +929,14 @@ import '../styles/global.css';
 
         // Re-attach event listeners
         attachGalleryListeners();
+        setTimeout(() => { if (typeof resizeAllGridItems === 'function') resizeAllGridItems(); }, 50);
 
-        // Progressive Enhancement for legacy R2 posts that lack metadata (Will cause short layout snap on first boot)
-        galleryEl.querySelectorAll('.gallery-item-wrapper[data-needs-check="true"] img').forEach(img => {
-          const verifyOrientation = () => {
-            const wrapper = img.closest('.gallery-item-wrapper');
-            if (img.naturalHeight > img.naturalWidth) {
-              wrapper.classList.replace('is-landscape', 'is-portrait');
-            }
-          };
+        // Re-attach image load listeners for masonry
+        galleryEl.querySelectorAll('.gallery-item img').forEach(img => {
           if (img.complete) {
-            verifyOrientation();
+            window.resizeGridItem(img.closest('.gallery-item-wrapper'));
           } else {
-            img.addEventListener('load', verifyOrientation);
+            img.addEventListener('load', () => window.resizeGridItem(img.closest('.gallery-item-wrapper')));
           }
         });
       }
