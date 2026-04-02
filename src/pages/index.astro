@@ -114,7 +114,7 @@ import '../styles/global.css';
 
             
             <label class="modal-caption" style="margin-top: 1rem; margin-bottom: 0.5rem; display: block;">ADD A CAPTION</label>
-            <textarea id="local-caption-input" class="mini-caption-textarea" placeholder="Say Something?" rows="3"></textarea>
+            <textarea id="local-caption-input" class="mini-caption-textarea" placeholder="Say Something?" rows="2"></textarea>
             <div class="mini-author-group">
               <span class="mini-author-label">BY</span>
               <input type="text" id="local-author-input" class="mini-author-input" placeholder="J. Doe" />
@@ -135,7 +135,7 @@ import '../styles/global.css';
         <h3 class="modal-title">Edit Stack</h3>
         <p class="modal-caption" style="margin-bottom: 0;">Drag to reorder, click × to delete</p>
         <div id="mini-gallery-grid" class="mini-gallery-grid"></div>
-        <textarea id="mini-caption-input" class="mini-caption-textarea" placeholder="Say Something?" rows="3"></textarea>
+        <textarea id="mini-caption-input" class="mini-caption-textarea" placeholder="Say Something?" rows="2"></textarea>
         <div class="mini-author-group">
           <span class="mini-author-label">BY</span>
           <input type="text" id="mini-author-input" class="mini-author-input" placeholder="J. Doe" />
@@ -1050,7 +1050,7 @@ import '../styles/global.css';
                       const currentAuthor = wrapper.getAttribute('data-author');
                       let finalCaption = captionStr ? captionStr.replace(/\n/g, '<br>') : '';
                       if (currentAuthor && currentAuthor.trim() !== '') {
-                        finalCaption += `<br><b>BY ${currentAuthor.trim()}</b>`;
+                        finalCaption += `<br>BY <b>${currentAuthor.trim()}</b>`;
                       }
                       el.innerHTML = finalCaption;
                     });
