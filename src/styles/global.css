@@ -247,7 +247,7 @@ header {
   height: auto;
   display: block;
   object-fit: cover;
-  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s ease;
 }
 
 .gallery-item:hover img {
@@ -300,15 +300,20 @@ header {
   cursor: pointer;
 }
 
-body.is-editing .gallery-item {
+/* Project a full-canvas static dashed border from the unscaled wrapper */
+body.is-editing .gallery-item-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   border: 1px dashed rgba(255, 255, 255, 0.3);
   border-radius: 24px;
-  /* Removed layout-breaking padding */
+  pointer-events: none;
+  z-index: 1;
 }
 
-body.is-editing .gallery-item img {
-  transform: scale(0.95); /* Perfect mathematical inner zoom suspension */
-  border-radius: 20px; /* Symmetrically matching restored corners */
+/* Dynamically shrink the inner photo container, naturally sweeping its icons and clipped photo inwards */
+body.is-editing .gallery-item {
+  transform: scale(0.94) !important; 
 }
 
 body.is-editing .sortable-ghost .gallery-item {
