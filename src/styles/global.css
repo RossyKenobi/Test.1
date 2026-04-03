@@ -1020,16 +1020,16 @@ html {
     margin: 1rem 0 !important;
   }
   .modal-actions {
-    gap: 0.75rem !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important; /* Centered wrapping */
+    gap: 1.5rem !important; /* Restore healthy gap */
+    flex-wrap: nowrap !important; /* Force side-by-side like Fig 2 */
+    justify-content: center !important;
     margin-top: 1.5rem !important;
   }
   .modal-actions .action-btn {
-    padding: 0.5rem 0.8rem !important; /* More space-efficient buttons */
-    font-size: 0.65rem !important; /* Slightly smaller for tight mobile */
-    width: 92% !important;
-    max-width: 92% !important;
+    padding: 0.45rem 1rem !important; /* Pill shape */
+    font-size: 0.65rem !important;
+    width: auto !important; /* Remove full width */
+    max-width: none !important;
   }
 }
 @media (max-width: 480px) {
