@@ -493,10 +493,13 @@ body.is-editing .sortable-ghost .gallery-item {
   border-radius: 0;
   color: white;
   padding: 0.75rem 0;
-  width: 100%;
+  width: 85%; /* Scaled for consistent visual percentage vs modal width */
+  max-width: 100%;
+  margin: 0.5rem auto 0;
+  display: block;
   font-family: inherit;
   font-size: 1rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   outline: none;
   box-sizing: border-box;
   text-align: center;
