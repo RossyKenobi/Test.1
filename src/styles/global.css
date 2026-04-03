@@ -1044,9 +1044,9 @@ html {
     gap: 0 !important;
   }
   #edit-actions .action-btn {
-    padding: 0.4rem 0.85rem !important; /* Balanced pills with breathing room */
-    font-size: 0.65rem !important;
-    letter-spacing: 0.05em !important;
+    padding: 0.45rem 1rem !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.08em !important;
     min-width: 0 !important;
   }
   
