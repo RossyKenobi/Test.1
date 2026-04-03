@@ -511,7 +511,7 @@ body.is-editing .sortable-ghost .gallery-item {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.mod.gallery-bottom-bar {
+.gallery-bottom-bar {
   width: 100%;
   display: flex;
   justify-content: center;
@@ -522,6 +522,9 @@ body.is-editing .sortable-ghost .gallery-item {
 #edit-actions {
   display: flex;
   gap: 1.5rem; /* Desktop and iPad maintain large gaps */
+}
+.hidden {
+  display: none !important;
 }
 
 .modal-actions {
@@ -1030,18 +1033,27 @@ html {
   }
 }
 @media (max-width: 480px) {
-  /* iPhone specific alignment for edit buttons */
+  /* iPhone specific alignment for edit buttons (V5) */
   .gallery-bottom-bar {
     padding: 0 3rem !important; /* Perfect align with grid edges */
     width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+  .edit-controls {
+    width: 100% !important;
+    justify-content: center !important;
+    display: flex !important;
+    gap: 0 !important;
   }
   #edit-actions {
     width: 100% !important;
+    display: flex !important;
     justify-content: space-between !important;
     gap: 0 !important;
   }
   #edit-actions .action-btn {
-    padding: 0.4rem 0.65rem !important; /* Extremely compact pills */
+    padding: 0.4rem 0.85rem !important; /* Balanced pills for iPhone */
     font-size: 0.65rem !important;
     letter-spacing: 0.05em !important;
     min-width: 0 !important;
