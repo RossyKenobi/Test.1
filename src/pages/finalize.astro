@@ -1,0 +1,38 @@
+---
+export const prerender = false;
+---
+<html lang="en">
+<head>
+  <title>Finalizing via Auth...</title>
+  <style>
+    body { background: #0a0a0a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="status">Finalizing...</div>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteId = urlParams.get('inviteId') || localStorage.getItem('clerk_invite_id');
+    
+    async function finalize() {
+      if (inviteId) {
+        try {
+          const res = await fetch('/api/finalize-registration', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ inviteId })
+          });
+          const data = await res.json();
+          window.location.href = '/';
+        } catch (e) {
+          document.getElementById('status').innerText = 'Registration error. Please contact admin.';
+        }
+      } else {
+        window.location.href = '/';
+      }
+    }
+    
+    finalize();
+  </script>
+</body>
+</html>

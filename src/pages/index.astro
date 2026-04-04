@@ -1,5 +1,16 @@
 ---
+export const prerender = false;
 import '../styles/global.css';
+import { Show, UserButton } from '@clerk/astro/components';
+
+const auth = Astro.locals.auth();
+const currentUserId = auth?.userId || null;
+
+let isCurrentUserAdmin = false;
+if (currentUserId) {
+  const { isAdmin } = await import('../lib/auth');
+  isCurrentUserAdmin = await isAdmin(currentUserId);
+}
 ---
 
 <html lang="en">
@@ -20,7 +31,13 @@ import '../styles/global.css';
       <div class="nav-brand">THE GALLERY</div>
       <div class="nav-links">
         <a href="#contact" class="nav-link">Contact</a>
-        <a href="#" id="admin-nav-link" class="nav-link">Admin</a>
+        <Show when="signedOut">
+          <a href="/sign-in" class="nav-link">Login</a>
+          <a href="/sign-up" class="nav-link">Register</a>
+        </Show>
+        <Show when="signedIn">
+          <UserButton />
+        </Show>
       </div>
     </nav>
 
@@ -82,21 +99,7 @@ import '../styles/global.css';
       &copy; 2026 THE GALLERY BY F.Y. | v1.1.0
     </footer>
 
-    <!-- Password Modal (Minimalist) -->
-    <div class="modal-overlay" id="password-modal">
-      <div class="modal-content">
-        <h3 class="modal-title">Verification Required</h3>
-        <div class="modal-input-group" style="margin-top:2.75rem;">
-          <label class="modal-caption">Enter Administrative Password</label>
-          <input type="password" id="password-input" class="modal-input" placeholder="••••••••" />
-          <div id="password-error" class="error-msg">Incorrect password.</div>
-        </div>
-        <div class="modal-actions" style="margin-top:2.25rem;">
-          <button class="action-btn" id="close-password-modal">Cancel</button>
-          <button class="action-btn confirm" id="submit-password">Verify</button>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Import Modal -->
     <div class="modal-overlay" id="import-modal">
@@ -301,6 +304,12 @@ import '../styles/global.css';
 
     </style>
 
+    <script define:vars={{ currentUserId, isCurrentUserAdmin }}>
+      window.__AUTH__ = {
+        userId: currentUserId,
+        isAdmin: isCurrentUserAdmin,
+      };
+    </script>
     <script>
       import PhotoSwipe from 'photoswipe';
       import Sortable from 'sortablejs';
@@ -318,7 +327,9 @@ import '../styles/global.css';
       let isEditMode = false;
       let sortableInstance = null;
       let initialOrder = [];
-      let isAdminLoggedIn = sessionStorage.getItem('admin_logged_in') === 'true';
+      const AUTH = window.__AUTH__ || {};
+      const isAuthenticated = !!AUTH.userId;
+      const isAdminFlag = AUTH.isAdmin;
       let filePickerActive = false;
       let pendingAction = null;
       let pendingPostId = null;
@@ -328,8 +339,6 @@ import '../styles/global.css';
       let originalMiniCaption = '';
       let originalMiniAuthor = '';
       let pendingMiniDeleteIdx = null;
-
-      const PASSWORD = 'steveyfff';
 
       // --- Hero Scroll Effect ---
       console.log('--- Astro Gallery Script Version: 2.0.0-R2 ---');
@@ -376,10 +385,8 @@ import '../styles/global.css';
       heroOverlay.style.webkitBackdropFilter = `blur(0px)`;
 
       // --- DOM Elements ---
-      const passwordModal = document.getElementById('password-modal');
       const importModal = document.getElementById('import-modal');
       const progressModal = document.getElementById('progress-modal');
-      const passwordInput = document.getElementById('password-input');
       const fileInput = document.getElementById('local-file-input');
       const progressBarInner = document.getElementById('progress-bar-inner');
       const progressStatusText = document.getElementById('progress-status-text');
@@ -390,7 +397,6 @@ import '../styles/global.css';
       const saveBtn = document.getElementById('save-edits');
       const cancelBtn = document.getElementById('cancel-edits');
       const addBtn = document.getElementById('add-new-post');
-      const adminNavLink = document.getElementById('admin-nav-link');
       const galleryBottomBar = document.getElementById('gallery-bottom-bar');
       const confirmDiscardModal = document.getElementById('confirm-discard-modal');
       const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
@@ -418,48 +424,12 @@ import '../styles/global.css';
         }
       };
 
-      document.getElementById('close-password-modal')?.addEventListener('click', () => closeModal(passwordModal));
       document.getElementById('close-import-modal')?.addEventListener('click', () => closeModal(importModal));
       refreshPageBtn?.addEventListener('click', () => window.location.reload());
 
-      if (isAdminLoggedIn) {
-        adminNavLink.textContent = 'Log Out';
+      if (isAuthenticated) {
         galleryBottomBar.style.display = 'flex';
       }
-
-      // --- Admin Login ---
-      adminNavLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (isAdminLoggedIn) {
-          isAdminLoggedIn = false;
-          sessionStorage.removeItem('admin_logged_in');
-          adminNavLink.textContent = 'Admin';
-          galleryBottomBar.style.display = 'none';
-          if (isEditMode) exitEditMode();
-        } else {
-          pendingAction = 'ADMIN_LOGIN';
-          openModal(passwordModal);
-        }
-      });
-
-      document.getElementById('submit-password')?.addEventListener('click', () => {
-        const pwInput = document.getElementById('password-input');
-        const errorEl = document.getElementById('password-error');
-        if (pwInput.value === PASSWORD) {
-          errorEl.classList.remove('show');
-          closeModal(passwordModal);
-          if (pendingAction === 'ADMIN_LOGIN') {
-            isAdminLoggedIn = true;
-            sessionStorage.setItem('admin_logged_in', 'true');
-            adminNavLink.textContent = 'Log Out';
-            galleryBottomBar.style.display = 'flex';
-          } else if (pendingAction === 'IMPORT') {
-            openModal(importModal);
-          }
-        } else {
-          errorEl.classList.add('show');
-        }
-      });
 
       // --- Edit Mode ---
       editBtn.addEventListener('click', () => { if (!isEditMode) enterEditMode(); });
@@ -928,17 +898,25 @@ import '../styles/global.css';
         // Graceful degradation: If old metadata is completely missing the orientation flag (undefined), default to landscape safely.
         const orientationClass = post.isPortrait === true ? 'is-portrait' : 'is-landscape';
 
-        return `
-          <div class="gallery-item-wrapper ${orientationClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-needs-check="${post.isPortrait === undefined}">
-            <a href="${thumbnail}" class="gallery-item" data-pswp-src="${thumbnail}">
-              <img src="${thumbnail}" alt="${post.caption || 'Gallery Post'}" loading="lazy" decoding="async" />
+        let canEdit = false;
+        if (isAuthenticated) {
+          canEdit = isAdminFlag || post.owner_clerk_id === AUTH.userId;
+        }
+
+        const deleteBtnHTML = canEdit ? `
               <button class="delete-btn" aria-label="Delete Post" data-id="${post.id}" onclick="event.stopPropagation();">
                 <svg viewBox="0 0 24 24">
                   <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                   <line x1="10" y1="11" x2="10" y2="17"></line>
                   <line x1="14" y1="11" x2="14" y2="17"></line>
                 </svg>
-              </button>
+              </button>` : '';
+
+        return `
+          <div class="gallery-item-wrapper ${orientationClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-needs-check="${post.isPortrait === undefined}">
+            <a href="${thumbnail}" class="gallery-item" data-pswp-src="${thumbnail}">
+              <img src="${thumbnail}" alt="${post.caption || 'Gallery Post'}" loading="lazy" decoding="async" />
+              ${deleteBtnHTML}
               ${isCarousel ? `
                 <div class="stack-icon" aria-label="${images.length} images">
                   <svg viewBox="0 0 24 24">
