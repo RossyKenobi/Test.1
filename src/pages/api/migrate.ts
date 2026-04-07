@@ -32,9 +32,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
     for (let i = 0; i < posts.length; i++) {
       const post = posts[i];
 
-      // Insert Stack
-      const stackResult = await sql`
-        INSERT INTO stacks (legacy_id, caption, author, category, is_portrait, hidden, sort_order, owner_clerk_id, created_at, updated_at)
+      // Insert Stack — id is varchar, use post.id directly
+      await sql`
+        INSERT INTO stacks (id, caption, author, category, is_portrait, hidden, sort_order, owner_clerk_id, created_at)
         VALUES (
           ${post.id}, 
           ${post.caption || ''}, 
@@ -44,36 +44,31 @@ export const GET: APIRoute = async ({ url, locals }) => {
           ${post.hidden || false}, 
           ${i}, 
           ${ownerClerkId}, 
-          NOW(), 
           NOW()
         )
-        ON CONFLICT DO NOTHING
-        RETURNING id
+        ON CONFLICT (id) DO NOTHING
       `;
 
-      // Handling edge cases where ON CONFLICT DO NOTHING returned no id (if we run it multiple times)
-      let newStackId;
-      if (stackResult.length > 0) {
-        newStackId = stackResult[0].id;
-        stackCount++;
-      } else {
-        const existing = await sql`SELECT id FROM stacks WHERE legacy_id = ${post.id}`;
-        if (existing.length > 0) {
-            newStackId = existing[0].id;
+      // Check if it was inserted or already existed
+      const existing = await sql`SELECT id FROM stacks WHERE id = ${post.id}`;
+      if (existing.length > 0) {
+        const stackId = existing[0].id;
+        
+        // Count new inserts
+        const countBefore = await sql`SELECT count(*) as c FROM photos WHERE stack_id = ${stackId}`;
+        if (parseInt(countBefore[0].c) === 0) {
+          stackCount++;
         }
-      }
 
-      // Insert Photos if newStackId exists
-      if (newStackId) {
+        // Wipe old photos for this stack to avoid duplicates on rerun
+        await sql`DELETE FROM photos WHERE stack_id = ${stackId}`;
+
+        // Insert Photos — column is image_url not url
         const images = post.images || [];
-        
-        // Wipe old photos for this stack just in case it's a rerun to avoid duplicates
-        await sql`DELETE FROM photos WHERE stack_id = ${newStackId}`;
-        
         for (let j = 0; j < images.length; j++) {
           await sql`
-            INSERT INTO photos (stack_id, url, sort_order, created_at)
-            VALUES (${newStackId}, ${images[j]}, ${j}, NOW())
+            INSERT INTO photos (stack_id, image_url, sort_order, created_at)
+            VALUES (${stackId}, ${images[j]}, ${j}, NOW())
           `;
           photoCount++;
         }

@@ -1,20 +1,20 @@
 import type { APIRoute } from 'astro';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { sql } from '../../lib/db';
-import { isAdmin } from '../../lib/auth';
-
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY as string,
-  },
-});
 
 const BUCKET = 'my-gallery-images';
 
 export const prerender = false;
+
+function getS3Client() {
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${import.meta.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: import.meta.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: import.meta.env.R2_SECRET_ACCESS_KEY,
+    },
+  });
+}
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const auth = locals.auth();
@@ -37,6 +37,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const key = `posts/${filename}`;
 
+    const s3 = getS3Client();
     await s3.send(new PutObjectCommand({
       Bucket: BUCKET,
       Key: key,

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { sql } from '../../lib/db';
-import { isAdmin } from '../../lib/auth';
+import { isAdmin, ensureUser } from '../../lib/auth';
 
 export const prerender = false;
 
@@ -12,28 +12,33 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   try {
+    // Ensure user exists in Postgres before inserting stack (Fixes FK error)
+    await ensureUser(auth.userId);
+
     const body = await request.json();
     const { id, caption, author, category, isPortrait, hidden, images } = body;
 
-    // Use current ID logic or generate DB id
-    const result = await sql`
-      INSERT INTO stacks (legacy_id, caption, author, category, is_portrait, hidden, owner_clerk_id, created_at, updated_at)
-      VALUES (${id}, ${caption || ''}, ${author || ''}, ${category || 'General'}, ${isPortrait || false}, ${hidden || false}, ${auth.userId}, NOW(), NOW())
-      RETURNING id
+    // Get current max sort_order
+    const maxSort = await sql`SELECT COALESCE(MAX(sort_order), -1) as max_sort FROM stacks`;
+    const nextSort = maxSort[0].max_sort + 1;
+
+    await sql`
+      INSERT INTO stacks (id, caption, author, category, is_portrait, hidden, sort_order, owner_clerk_id, created_at)
+      VALUES (${id}, ${caption || ''}, ${author || ''}, ${category || 'General'}, ${isPortrait || false}, ${hidden || false}, ${nextSort}, ${auth.userId}, NOW())
+      ON CONFLICT (id) DO NOTHING
     `;
-    const newStackId = result[0].id;
 
     // Insert photos if any
     if (images && images.length > 0) {
       for (let i = 0; i < images.length; i++) {
         await sql`
-          INSERT INTO photos (stack_id, url, sort_order, created_at)
-          VALUES (${newStackId}, ${images[i]}, ${i}, NOW())
+          INSERT INTO photos (stack_id, image_url, sort_order, created_at)
+          VALUES (${id}, ${images[i]}, ${i}, NOW())
         `;
       }
     }
 
-    return new Response(JSON.stringify({ success: true, db_id: newStackId }), { status: 201 });
+    return new Response(JSON.stringify({ success: true, db_id: id }), { status: 201 });
   } catch (err: any) {
     console.error('Stack creation error:', err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });

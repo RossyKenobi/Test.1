@@ -20,9 +20,15 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
 
     let result;
     if (adminFlag) {
-      result = await sql`DELETE FROM stacks WHERE legacy_id = ${stackId} OR id::text = ${stackId} RETURNING id`;
+      // Admin: can delete anything
+      await sql`DELETE FROM photos WHERE stack_id = ${stackId}`;
+      result = await sql`DELETE FROM stacks WHERE id = ${stackId} RETURNING id`;
     } else {
-      result = await sql`DELETE FROM stacks WHERE (legacy_id = ${stackId} OR id::text = ${stackId}) AND owner_clerk_id = ${auth.userId} RETURNING id`;
+      // User: can only delete if owner
+      result = await sql`DELETE FROM stacks WHERE id = ${stackId} AND owner_clerk_id = ${auth.userId} RETURNING id`;
+      if (result.length > 0) {
+        await sql`DELETE FROM photos WHERE stack_id = ${stackId}`;
+      }
     }
 
     if (result.length === 0) {

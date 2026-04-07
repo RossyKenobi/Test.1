@@ -80,7 +80,7 @@ import { SignUp } from '@clerk/astro/components';
   </style>
 </head>
 <body>
-  <a href="/" class="back-link">← Back to Gallery</a>
+  <a href="/" class="back-link">&larr; Back to Gallery</a>
   
   <div id="invite-form">
     <h3 style="margin-top: 0; letter-spacing: 0.25em; font-weight: 300;">INVITATION</h3>
@@ -90,7 +90,27 @@ import { SignUp } from '@clerk/astro/components';
   </div>
 
   <div id="sign-up-container">
-    <SignUp routing="hash" fallbackRedirectUrl="/finalize" />
+    <SignUp routing="hash" fallbackRedirectUrl="/finalize" appearance={{
+      variables: { colorBackground: 'transparent', colorText: '#ededed', colorPrimary: '#ededed', colorTextOnPrimaryBackground: 'black', colorInputBackground: 'transparent', colorInputText: '#ededed', colorNeutral: 'rgba(237,237,237,0.5)', colorTextSecondary: 'rgba(237,237,237,0.5)' },
+      elements: {
+        cardBox: { backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', boxShadow: 'none', borderRadius: '24px' },
+        card: { backgroundColor: 'transparent', border: 'none', boxShadow: 'none' },
+        headerTitle: { color: '#ededed', fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.1em', fontWeight: '400', textTransform: 'uppercase' },
+        headerSubtitle: { display: 'none' },
+        socialButtonsBlockButton: { border: '1px solid rgba(237, 237, 237, 0.2)', borderRadius: '40px', color: '#ededed' },
+        socialButtonsBlockButtonText: { color: '#ededed' },
+        dividerLine: { background: 'rgba(237,237,237,0.1)' },
+        dividerText: { color: 'rgba(237,237,237,0.5)' },
+        formFieldLabel: { color: 'rgba(237,237,237,0.7)', fontFamily: "'Montserrat', sans-serif", fontSize: '0.8rem' },
+        formFieldInput: { background: 'transparent', border: 'none', borderBottom: '1px solid rgba(237,237,237,0.2)', borderRadius: '0', color: '#ededed', padding: '0.75rem 0', outline: 'none', boxShadow: 'none' },
+        formButtonPrimary: { background: '#ededed', color: 'black', borderRadius: '40px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '500', border: 'none', padding: '0.75rem 2rem' },
+        footer: { background: 'transparent' },
+        footerActionText: { color: 'rgba(237,237,237,0.5)' },
+        footerActionLink: { color: '#ededed', fontWeight: '500' },
+        identityPreviewText: { color: '#ededed' },
+        identityPreviewEditButton: { color: 'rgba(237,237,237,0.5)' }
+      }
+    }} />
   </div>
 
   <script>
