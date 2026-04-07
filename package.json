@@ -1,6 +1,9 @@
 {
   "name": "instagram-portfolio-astro",
   "version": "1.2.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
