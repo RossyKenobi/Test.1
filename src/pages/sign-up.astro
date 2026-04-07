@@ -1,0 +1,148 @@
+---
+export const prerender = false;
+import { SignUp } from '@clerk/astro/components';
+---
+<html lang="en">
+<head>
+  <title>Register - THE GALLERY</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #0a0a0a;
+      color: white;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .back-link {
+      position: absolute;
+      top: 2rem;
+      left: 2rem;
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+    .back-link:hover { color: white; }
+    
+    #invite-form {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 3rem;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+    input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      padding: 0.75rem 0;
+      width: 100%;
+      margin: 1.5rem 0;
+      text-align: center;
+      font-size: 1rem;
+      letter-spacing: 0.15em;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input:focus { border-bottom-color: rgba(255,255,255,0.8); }
+    button {
+      background: white;
+      color: black;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover { background: rgba(255,255,255,0.8); }
+    #error-msg {
+      color: #e11d48;
+      font-size: 0.8rem;
+      margin-top: 1rem;
+      height: 1rem;
+      opacity: 0;
+    }
+    #error-msg.show { opacity: 1; }
+    #sign-up-container { display: none; }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-link">&larr; Back to Gallery</a>
+  
+  <div id="invite-form">
+    <h3 style="margin-top: 0; letter-spacing: 0.25em; font-weight: 300;">INVITATION</h3>
+    <input type="text" id="invite-input" placeholder="ENTER CODE" />
+    <button id="verify-btn">Verify</button>
+    <div id="error-msg">Invalid Code</div>
+  </div>
+
+  <div id="sign-up-container">
+    <SignUp routing="hash" fallbackRedirectUrl="/finalize" appearance={{
+      variables: { colorBackground: 'transparent', colorText: '#ededed', colorPrimary: '#ededed', colorTextOnPrimaryBackground: 'black', colorInputBackground: 'transparent', colorInputText: '#ededed', colorNeutral: 'rgba(237,237,237,0.5)', colorTextSecondary: 'rgba(237,237,237,0.5)' },
+      elements: {
+        cardBox: { backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', boxShadow: 'none', borderRadius: '24px' },
+        card: { backgroundColor: 'transparent', border: 'none', boxShadow: 'none' },
+        headerTitle: { color: '#ededed', fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.1em', fontWeight: '400', textTransform: 'uppercase' },
+        headerSubtitle: { display: 'none' },
+        socialButtonsBlockButton: { border: '1px solid rgba(237, 237, 237, 0.2)', borderRadius: '40px', color: '#ededed' },
+        socialButtonsBlockButtonText: { color: '#ededed' },
+        dividerLine: { background: 'rgba(237,237,237,0.1)' },
+        dividerText: { color: 'rgba(237,237,237,0.5)' },
+        formFieldLabel: { color: 'rgba(237,237,237,0.7)', fontFamily: "'Montserrat', sans-serif", fontSize: '0.8rem' },
+        formFieldInput: { background: 'transparent', border: 'none', borderBottom: '1px solid rgba(237,237,237,0.2)', borderRadius: '0', color: '#ededed', padding: '0.75rem 0', outline: 'none', boxShadow: 'none' },
+        formButtonPrimary: { background: '#ededed', color: 'black', borderRadius: '40px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '500', border: 'none', padding: '0.75rem 2rem' },
+        footer: { background: 'transparent' },
+        footerActionText: { color: 'rgba(237,237,237,0.5)' },
+        footerActionLink: { color: '#ededed', fontWeight: '500' },
+        identityPreviewText: { color: '#ededed' },
+        identityPreviewEditButton: { color: 'rgba(237,237,237,0.5)' }
+      }
+    }} />
+  </div>
+
+  <script>
+    document.getElementById('verify-btn').addEventListener('click', async () => {
+      const code = document.getElementById('invite-input').value.trim();
+      const errorMsg = document.getElementById('error-msg');
+      if (!code) return;
+      
+      try {
+        const res = await fetch('/api/verify-invite', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        
+        if (data.valid && data.inviteId) {
+          // Store inviteId for finalize page to consume
+          localStorage.setItem('clerk_invite_id', data.inviteId);
+          
+          // Hide invite form, show signup
+          document.getElementById('invite-form').style.display = 'none';
+          document.getElementById('sign-up-container').style.display = 'block';
+        } else {
+          errorMsg.innerText = data.error || 'Invalid Code';
+          errorMsg.classList.add('show');
+        }
+      } catch (e) {
+        errorMsg.innerText = 'Network error';
+        errorMsg.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>

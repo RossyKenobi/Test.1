@@ -1,0 +1,41 @@
+---
+export const prerender = false;
+import { SignIn } from '@clerk/astro/components';
+---
+<html lang="en">
+<head>
+  <title>Sign In - THE GALLERY</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #0a0a0a;
+      color: white;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .back-link {
+      position: absolute;
+      top: 2rem;
+      left: 2rem;
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+    .back-link:hover { color: white; }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-link">&larr; Back to Gallery</a>
+  <div id="sign-in-container">
+    <SignIn routing="hash" signUpUrl="/sign-up" />
+  </div>
+</body>
+</html>

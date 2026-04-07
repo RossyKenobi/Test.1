@@ -1,5 +1,21 @@
 ---
+export const prerender = false;
 import '../styles/global.css';
+import { Show } from '@clerk/astro/components';
+
+const auth = Astro.locals.auth();
+const currentUserId = auth?.userId || null;
+
+let isCurrentUserAdmin = false;
+let currentUsername = '';
+if (currentUserId) {
+  const { isAdmin } = await import('../lib/auth');
+  isCurrentUserAdmin = await isAdmin(currentUserId);
+  try {
+    const user = await Astro.locals.currentUser();
+    currentUsername = (user?.username || user?.firstName || 'User').toUpperCase();
+  } catch { currentUsername = 'USER'; }
+}
 ---
 
 <html lang="en">
@@ -20,7 +36,17 @@ import '../styles/global.css';
       <div class="nav-brand">THE GALLERY</div>
       <div class="nav-links">
         <a href="#contact" class="nav-link">Contact</a>
-        <a href="#" id="admin-nav-link" class="nav-link">Admin</a>
+        { !currentUserId ? (
+          <button class="nav-link" id="custom-login-btn" style="background:none; border:none; cursor:pointer; font:inherit;">Login</button>
+        ) : (
+          <div class="user-menu-wrapper" style="position: relative;">
+            <button class="nav-link user-menu-trigger" id="user-menu-trigger" style="background:none; border:none; cursor:pointer; font:inherit;">{currentUsername}</button>
+            <div class="user-menu-popover" id="user-menu-popover">
+              <button class="user-menu-item" id="user-menu-manage">Manage account</button>
+              <button class="user-menu-item user-menu-signout" id="user-menu-signout">Sign out</button>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
 
@@ -28,8 +54,8 @@ import '../styles/global.css';
     <header class="hero-section">
       <img src="/images/hero_background.jpg" alt="Hero Photography" class="hero-bg" />
       <div class="hero-content">
-        <h1 class="hero-title">Selected Works</h1>
-        <p class="hero-subtitle">Visual exploration and storytelling.</p>
+        <h1 class="hero-title">Lucid Flânerie</h1>
+        <p class="hero-subtitle">Unscripted drifts through the quotidian.</p>
       </div>
       <div class="scroll-indicator">
         <span>SCROLL</span>
@@ -79,24 +105,10 @@ import '../styles/global.css';
     </section>
     
     <footer style="padding: 2rem 0 1rem; text-align: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; letter-spacing: 0.1rem;">
-      &copy; 2026 THE GALLERY BY F.Y. | v1.1.0
+      &copy; 2026 THE GALLERY BY F.Y. | v1.2.0
     </footer>
 
-    <!-- Password Modal (Minimalist) -->
-    <div class="modal-overlay" id="password-modal">
-      <div class="modal-content">
-        <h3 class="modal-title">Verification Required</h3>
-        <div class="modal-input-group" style="margin-top:2.75rem;">
-          <label class="modal-caption">Enter Administrative Password</label>
-          <input type="password" id="password-input" class="modal-input" placeholder="••••••••" />
-          <div id="password-error" class="error-msg">Incorrect password.</div>
-        </div>
-        <div class="modal-actions" style="margin-top:2.25rem;">
-          <button class="action-btn" id="close-password-modal">Cancel</button>
-          <button class="action-btn confirm" id="submit-password">Verify</button>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Import Modal -->
     <div class="modal-overlay" id="import-modal">
@@ -104,15 +116,11 @@ import '../styles/global.css';
         <h3 class="modal-title" style="margin-bottom: 3rem; letter-spacing: 0.2em;">IMPORT NEW WORK</h3>
 
         <div id="local-tab" class="tab-content active">
-          <div class="modal-input-group">
-            <label class="modal-caption" style="margin-bottom: 1.5rem; display: block;">SELECT IMAGES</label>
-            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem; margin-bottom: 2.5rem;">
+          <div class="modal-input-group" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
                 <label for="local-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose Files</label>
                 <span id="file-name-display" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em; font-weight: 300;">No file chosen</span>
             </div>
-
-            
-            <label class="modal-caption" style="margin-top: 1rem; margin-bottom: 0.5rem; display: block;">ADD A CAPTION</label>
             <textarea id="local-caption-input" class="mini-caption-textarea" placeholder="Say Something?" rows="2"></textarea>
             <div class="mini-author-group">
               <span class="mini-author-label">BY</span>
@@ -164,7 +172,7 @@ import '../styles/global.css';
     <div class="modal-overlay" id="confirm-delete-modal" style="z-index: 2000;">
       <div class="modal-content">
         <h3 class="modal-title">Delete Stack</h3>
-        <p class="modal-caption" style="margin-bottom: 2rem;">Are you sure you want to delete this stack? This action cannot be undone.</p>
+        <p class="modal-caption" style="margin-bottom: 2rem;">Are you sure you want to delete this stack?<br>This action cannot be undone.</p>
         <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 2rem;">
           <button class="action-btn" id="cancel-delete-btn">Cancel</button>
           <button class="action-btn confirm" id="confirm-delete-btn" style="color: #e11d48;">Delete</button>
@@ -186,6 +194,28 @@ import '../styles/global.css';
           <button class="refresh-btn" id="refresh-page-btn">Refresh</button>
         </div>
       </div>
+    </div>
+    
+    <!-- Invite Modal -->
+    <div class="modal-overlay" id="invite-modal">
+      <div class="modal-content" style="max-width: 500px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 250px;">
+        <h3 class="modal-title" style="margin-bottom: 0;">Invitation</h3>
+        
+        <div style="width: 100%; position: relative; margin: 2rem 0;">
+          <input type="text" id="invite-input" placeholder="Enter Invitation Code" style="background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 0.75rem 0; width: 100%; font-size: 1rem; color: white; outline: none; transition: border-color 0.3s; text-align: center; font-family: inherit; letter-spacing: 0.1em;" />
+          <div id="invite-error-msg" style="position: absolute; width: 100%; text-align: center; color: #e11d48; font-size: 0.8rem; bottom: -1.5rem; opacity: 0; transition: opacity 0.3s; pointer-events: none;">Invalid Code</div>
+        </div>
+
+        <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 0; width: 100%;">
+          <button class="action-btn" id="cancel-invite-btn">Cancel</button>
+          <button class="action-btn confirm" id="verify-invite-btn">Verify</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Custom Signup Modal container for generic mounting -->
+    <div class="modal-overlay" id="custom-signup-modal" style="z-index: 2000;">
+      <div id="clerk-signup-mount" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;"></div>
     </div>
 
     <!-- File inputs OUTSIDE all modals to prevent file picker from closing modals -->
@@ -301,6 +331,12 @@ import '../styles/global.css';
 
     </style>
 
+    <script define:vars={{ currentUserId, isCurrentUserAdmin }}>
+      window.__AUTH__ = {
+        userId: currentUserId,
+        isAdmin: isCurrentUserAdmin,
+      };
+    </script>
     <script>
       import PhotoSwipe from 'photoswipe';
       import Sortable from 'sortablejs';
@@ -318,7 +354,9 @@ import '../styles/global.css';
       let isEditMode = false;
       let sortableInstance = null;
       let initialOrder = [];
-      let isAdminLoggedIn = sessionStorage.getItem('admin_logged_in') === 'true';
+      const AUTH = window.__AUTH__ || {};
+      const isAuthenticated = !!AUTH.userId;
+      const isAdminFlag = AUTH.isAdmin;
       let filePickerActive = false;
       let pendingAction = null;
       let pendingPostId = null;
@@ -328,8 +366,6 @@ import '../styles/global.css';
       let originalMiniCaption = '';
       let originalMiniAuthor = '';
       let pendingMiniDeleteIdx = null;
-
-      const PASSWORD = 'steveyfff';
 
       // --- Hero Scroll Effect ---
       console.log('--- Astro Gallery Script Version: 2.0.0-R2 ---');
@@ -360,6 +396,14 @@ import '../styles/global.css';
               minimalNav.style.webkitBackdropFilter = `blur(${navProgress * 5}px)`;
               if (scrollY > 20) minimalNav.classList.add('is-scrolled');
               else minimalNav.classList.remove('is-scrolled');
+
+              // Sync custom user menu glassmorphism with navbar
+              const userMenu = document.getElementById('user-menu-popover');
+              if (userMenu) {
+                userMenu.style.background = `rgba(0, 0, 0, ${navProgress * 0.05})`;
+                userMenu.style.backdropFilter = `blur(${navProgress * 5}px)`;
+                userMenu.style.webkitBackdropFilter = `blur(${navProgress * 5}px)`;
+              }
             }
 
             if (heroDivider) {
@@ -375,11 +419,58 @@ import '../styles/global.css';
       heroOverlay.style.backdropFilter = `blur(0px)`;
       heroOverlay.style.webkitBackdropFilter = `blur(0px)`;
 
+      // --- Custom User Menu ---
+      const userMenuTrigger = document.getElementById('user-menu-trigger');
+      const userMenuPopover = document.getElementById('user-menu-popover');
+      const userMenuManage = document.getElementById('user-menu-manage');
+      const userMenuSignout = document.getElementById('user-menu-signout');
+
+      if (userMenuTrigger && userMenuPopover) {
+        // Toggle menu
+        userMenuTrigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          userMenuPopover.classList.toggle('open');
+          // Apply current glassmorphism on open
+          if (userMenuPopover.classList.contains('open')) {
+            const vh = window.innerHeight;
+            const prog = Math.min(window.scrollY / (vh * 0.66), 1);
+            userMenuPopover.style.background = `rgba(0, 0, 0, ${prog * 0.05})`;
+            userMenuPopover.style.backdropFilter = `blur(${prog * 5}px)`;
+            userMenuPopover.style.webkitBackdropFilter = `blur(${prog * 5}px)`;
+          }
+        });
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+          if (!userMenuPopover.contains(e.target) && e.target !== userMenuTrigger) {
+            userMenuPopover.classList.remove('open');
+          }
+        });
+
+        // Manage account → open Clerk's UserProfile modal
+        if (userMenuManage) {
+          userMenuManage.addEventListener('click', () => {
+            userMenuPopover.classList.remove('open');
+            if (window.Clerk) {
+              window.Clerk.openUserProfile();
+            }
+          });
+        }
+
+        // Sign out
+        if (userMenuSignout) {
+          userMenuSignout.addEventListener('click', () => {
+            userMenuPopover.classList.remove('open');
+            if (window.Clerk) {
+              window.Clerk.signOut().then(() => window.location.reload());
+            }
+          });
+        }
+      }
+
       // --- DOM Elements ---
-      const passwordModal = document.getElementById('password-modal');
       const importModal = document.getElementById('import-modal');
       const progressModal = document.getElementById('progress-modal');
-      const passwordInput = document.getElementById('password-input');
       const fileInput = document.getElementById('local-file-input');
       const progressBarInner = document.getElementById('progress-bar-inner');
       const progressStatusText = document.getElementById('progress-status-text');
@@ -390,11 +481,17 @@ import '../styles/global.css';
       const saveBtn = document.getElementById('save-edits');
       const cancelBtn = document.getElementById('cancel-edits');
       const addBtn = document.getElementById('add-new-post');
-      const adminNavLink = document.getElementById('admin-nav-link');
       const galleryBottomBar = document.getElementById('gallery-bottom-bar');
       const confirmDiscardModal = document.getElementById('confirm-discard-modal');
       const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
       const cancelDiscardBtn = document.getElementById('cancel-discard-btn');
+
+      // Invite Modal elements
+      const inviteModal = document.getElementById('invite-modal');
+      const verifyInviteBtn = document.getElementById('verify-invite-btn');
+      const cancelInviteBtn = document.getElementById('cancel-invite-btn');
+      const inviteInput = document.getElementById('invite-input');
+      const inviteErrorMsg = document.getElementById('invite-error-msg');
       const confirmDeleteModal = document.getElementById('confirm-delete-modal');
       const miniGalleryModal = document.getElementById('mini-gallery-modal');
       const closeMiniGalleryBtn = document.getElementById('close-mini-gallery');
@@ -413,53 +510,16 @@ import '../styles/global.css';
         if (filePickerActive) return;
         if (modal) {
           modal.classList.remove('active');
-          if (passwordInput) passwordInput.value = '';
           if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
         }
       };
 
-      document.getElementById('close-password-modal')?.addEventListener('click', () => closeModal(passwordModal));
       document.getElementById('close-import-modal')?.addEventListener('click', () => closeModal(importModal));
       refreshPageBtn?.addEventListener('click', () => window.location.reload());
 
-      if (isAdminLoggedIn) {
-        adminNavLink.textContent = 'Log Out';
+      if (isAuthenticated) {
         galleryBottomBar.style.display = 'flex';
       }
-
-      // --- Admin Login ---
-      adminNavLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (isAdminLoggedIn) {
-          isAdminLoggedIn = false;
-          sessionStorage.removeItem('admin_logged_in');
-          adminNavLink.textContent = 'Admin';
-          galleryBottomBar.style.display = 'none';
-          if (isEditMode) exitEditMode();
-        } else {
-          pendingAction = 'ADMIN_LOGIN';
-          openModal(passwordModal);
-        }
-      });
-
-      document.getElementById('submit-password')?.addEventListener('click', () => {
-        const pwInput = document.getElementById('password-input');
-        const errorEl = document.getElementById('password-error');
-        if (pwInput.value === PASSWORD) {
-          errorEl.classList.remove('show');
-          closeModal(passwordModal);
-          if (pendingAction === 'ADMIN_LOGIN') {
-            isAdminLoggedIn = true;
-            sessionStorage.setItem('admin_logged_in', 'true');
-            adminNavLink.textContent = 'Log Out';
-            galleryBottomBar.style.display = 'flex';
-          } else if (pendingAction === 'IMPORT') {
-            openModal(importModal);
-          }
-        } else {
-          errorEl.classList.add('show');
-        }
-      });
 
       // --- Edit Mode ---
       editBtn.addEventListener('click', () => { if (!isEditMode) enterEditMode(); });
@@ -495,11 +555,13 @@ import '../styles/global.css';
         const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
         initialOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
         const el = document.getElementById('gallery');
-        sortableInstance = new Sortable(el, {
-          animation: 150,
-          ghostClass: 'sortable-ghost',
-          onEnd: () => { if (typeof resizeAllGridItems === 'function') resizeAllGridItems(); }
-        });
+        if (isAdminFlag) {
+          sortableInstance = new Sortable(el, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: () => { if (typeof resizeAllGridItems === 'function') resizeAllGridItems(); }
+          });
+        }
         setTimeout(() => { if (typeof resizeAllGridItems === 'function') resizeAllGridItems(); }, 50);
       }
 
@@ -563,11 +625,11 @@ import '../styles/global.css';
             progressBarInner.style.width = '40%';
             try {
               closeModal(miniGalleryModal);
-              const updatedPosts = allPosts.map(p =>
-                p.id === postId ? { ...p, images: [...currentMiniImages] } : p
-              );
-              await savePostsToR2(updatedPosts);
-              allPosts = updatedPosts;
+              const updatedPost = allPosts.find(p => p.id === postId);
+              if (updatedPost) {
+                updatedPost.images = [...currentMiniImages];
+                await savePostsToR2(allPosts);
+              }
               renderGallery();
               progressBarInner.style.width = '100%';
               progressStatusText.innerText = 'Image removed!';
@@ -583,9 +645,12 @@ import '../styles/global.css';
           progressStatusText.innerText = 'Removing...';
           progressBarInner.style.width = '30%';
           try {
-            const updatedPosts = allPosts.filter(p => p.id !== pendingPostId);
-            await savePostsToR2(updatedPosts);
-            allPosts = updatedPosts;
+            const delRes = await fetch(`/api/stacks/${pendingPostId}`, { method: 'DELETE' });
+            if (!delRes.ok) {
+              const errData = await delRes.json();
+              throw new Error(errData.error || 'Failed to delete');
+            }
+            allPosts = allPosts.filter(p => p.id !== pendingPostId);
             renderGallery();
             progressBarInner.style.width = '100%';
             progressStatusText.innerText = 'Post deleted!';
@@ -630,39 +695,51 @@ import '../styles/global.css';
       // --- Mini Gallery Logic ---
       function renderMiniGallery() {
         miniGalleryGrid.innerHTML = '';
+        const postId = currentEditingWrapper ? currentEditingWrapper.getAttribute('data-id') : null;
+        const post = allPosts.find(p => p.id === postId);
+        const canEdit = isAdminFlag || (post && post.owner_clerk_id === AUTH.userId);
+
         currentMiniImages.forEach((src, idx) => {
           const div = document.createElement('div');
           div.className = 'mini-gallery-item';
           div.innerHTML = `
             <img src="${src}" alt="img ${idx}" draggable="false" style="pointer-events: none;" />
-            <button class="mini-delete-btn" data-idx="${idx}">×</button>
+            ${canEdit ? `<button class="mini-delete-btn" data-idx="${idx}">×</button>` : ''}
           `;
           miniGalleryGrid.appendChild(div);
         });
 
-        miniGalleryGrid.querySelectorAll('.mini-delete-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-            pendingMiniDeleteIdx = idx;
-            const delModal = document.getElementById('confirm-delete-modal');
-            delModal.querySelector('.modal-title').textContent = 'Delete Image';
-            delModal.querySelector('.modal-caption').textContent = 'Are you sure you want to remove this image from the stack?';
-            openModal(delModal);
+        if (canEdit) {
+          miniGalleryGrid.querySelectorAll('.mini-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+              pendingMiniDeleteIdx = idx;
+              const delModal = document.getElementById('confirm-delete-modal');
+              delModal.querySelector('.modal-title').textContent = 'Delete Image';
+              delModal.querySelector('.modal-caption').textContent = 'Are you sure you want to remove this image from the stack?';
+              openModal(delModal);
+            });
           });
-        });
+        }
       }
 
-      new Sortable(miniGalleryGrid, {
-        animation: 150,
-        filter: '.mini-delete-btn',
-        preventOnFilter: false,
-        onEnd: (evt) => {
-          const el = currentMiniImages.splice(evt.oldIndex, 1)[0];
-          currentMiniImages.splice(evt.newIndex, 0, el);
-        }
-      });
+      let miniSortable = null;
+      function enableMiniSortable(canEdit) {
+        if (miniSortable) miniSortable.destroy();
+        if (!canEdit) return;
+        
+        miniSortable = new Sortable(miniGalleryGrid, {
+          animation: 150,
+          filter: '.mini-delete-btn',
+          preventOnFilter: false,
+          onEnd: (evt) => {
+            const el = currentMiniImages.splice(evt.oldIndex, 1)[0];
+            currentMiniImages.splice(evt.newIndex, 0, el);
+          }
+        });
+      }
 
       miniImportBtn.addEventListener('click', () => {
         filePickerActive = true;
@@ -700,6 +777,14 @@ import '../styles/global.css';
       confirmMiniGalleryBtn.addEventListener('click', async () => {
         if (!currentEditingWrapper) { closeModal(miniGalleryModal); return; }
         const postId = currentEditingWrapper.getAttribute('data-id');
+        const post = allPosts.find(p => p.id === postId);
+        const canEdit = isAdminFlag || (post && post.owner_clerk_id === AUTH.userId);
+
+        if (!canEdit) {
+          closeModal(miniGalleryModal);
+          return;
+        }
+
         const newCaption = miniCaptionInput.value;
         const newAuthor = miniAuthorInput.value;
         const hasChanges = JSON.stringify(currentMiniImages) !== originalMiniImages || 
@@ -735,11 +820,13 @@ import '../styles/global.css';
           progressStatusText.innerText = 'Saving...';
           progressBarInner.style.width = '80%';
 
-          const updatedPosts = allPosts.map(p =>
-            p.id === postId ? { ...p, images: [...currentMiniImages], caption: newCaption, author: newAuthor } : p
-          );
-          await savePostsToR2(updatedPosts);
-          allPosts = updatedPosts;
+          const updatedPost = allPosts.find(p => p.id === postId);
+          if (updatedPost) {
+            updatedPost.images = [...currentMiniImages];
+            updatedPost.caption = newCaption;
+            updatedPost.author = newAuthor;
+          }
+          await savePostsToR2(allPosts);
           renderGallery();
 
           progressBarInner.style.width = '100%';
@@ -752,14 +839,33 @@ import '../styles/global.css';
 
       function openMiniGallery(wrapper) {
         currentEditingWrapper = wrapper;
+        const postId = wrapper.getAttribute('data-id');
+        const post = allPosts.find(p => p.id === postId);
+        const canEdit = isAdminFlag || (post && post.owner_clerk_id === AUTH.userId);
+
         const imagesRaw = wrapper.getAttribute('data-images') || '[]';
         currentMiniImages = JSON.parse(imagesRaw);
         originalMiniImages = JSON.stringify(currentMiniImages);
+        
         miniCaptionInput.value = wrapper.getAttribute('data-caption') || '';
         originalMiniCaption = miniCaptionInput.value;
+        miniCaptionInput.readOnly = !canEdit;
+
         miniAuthorInput.value = wrapper.getAttribute('data-author') || '';
         originalMiniAuthor = miniAuthorInput.value;
+        miniAuthorInput.readOnly = !canEdit;
+
+        // Toggle modal buttons visibility
+        if (canEdit) {
+          miniImportBtn.classList.remove('hidden');
+          confirmMiniGalleryBtn.innerText = 'Done';
+        } else {
+          miniImportBtn.classList.add('hidden');
+          confirmMiniGalleryBtn.innerText = 'Done'; // User requested to keep both
+        }
+
         renderMiniGallery();
+        enableMiniSortable(canEdit);
         openModal(miniGalleryModal);
       }
 
@@ -893,9 +999,18 @@ import '../styles/global.css';
             isPortrait: isPortrait,
           };
 
-          const updatedPosts = [...allPosts, newPost];
-          await savePostsToR2(updatedPosts);
-          allPosts = updatedPosts;
+          // Create the new stack in DB via dedicated endpoint
+          const createRes = await fetch('/api/stacks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newPost),
+          });
+          if (!createRes.ok) {
+            const errData = await createRes.json();
+            throw new Error(errData.error || 'Failed to create stack');
+          }
+
+          allPosts.push(newPost);
           renderGallery();
 
           progressBarInner.style.width = '100%';
@@ -928,17 +1043,25 @@ import '../styles/global.css';
         // Graceful degradation: If old metadata is completely missing the orientation flag (undefined), default to landscape safely.
         const orientationClass = post.isPortrait === true ? 'is-portrait' : 'is-landscape';
 
-        return `
-          <div class="gallery-item-wrapper ${orientationClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-needs-check="${post.isPortrait === undefined}">
-            <a href="${thumbnail}" class="gallery-item" data-pswp-src="${thumbnail}">
-              <img src="${thumbnail}" alt="${post.caption || 'Gallery Post'}" loading="lazy" decoding="async" />
+        let canEdit = false;
+        if (isAuthenticated) {
+          canEdit = isAdminFlag || post.owner_clerk_id === AUTH.userId;
+        }
+
+        const deleteBtnHTML = canEdit ? `
               <button class="delete-btn" aria-label="Delete Post" data-id="${post.id}" onclick="event.stopPropagation();">
                 <svg viewBox="0 0 24 24">
                   <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                   <line x1="10" y1="11" x2="10" y2="17"></line>
                   <line x1="14" y1="11" x2="14" y2="17"></line>
                 </svg>
-              </button>
+              </button>` : '';
+
+        return `
+          <div class="gallery-item-wrapper ${orientationClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-needs-check="${post.isPortrait === undefined}">
+            <a href="${thumbnail}" class="gallery-item" data-pswp-src="${thumbnail}">
+              <img src="${thumbnail}" alt="${post.caption || 'Gallery Post'}" loading="lazy" decoding="async" />
+              ${deleteBtnHTML}
               ${isCarousel ? `
                 <div class="stack-icon" aria-label="${images.length} images">
                   <svg viewBox="0 0 24 24">
@@ -965,12 +1088,18 @@ import '../styles/global.css';
         // Re-attach event listeners
         attachGalleryListeners();
 
-        // Progressive Enhancement for legacy R2 posts that lack metadata (Will cause short layout snap on first boot)
-        galleryEl.querySelectorAll('.gallery-item-wrapper[data-needs-check="true"] img').forEach(img => {
+        // Auto-detect orientation from actual image dimensions for all items
+        galleryEl.querySelectorAll('.gallery-item-wrapper img').forEach(img => {
           const verifyOrientation = () => {
             const wrapper = img.closest('.gallery-item-wrapper');
             if (img.naturalHeight > img.naturalWidth) {
-              wrapper.classList.replace('is-landscape', 'is-portrait');
+              if (wrapper.classList.contains('is-landscape')) {
+                wrapper.classList.replace('is-landscape', 'is-portrait');
+              }
+            } else {
+              if (wrapper.classList.contains('is-portrait')) {
+                wrapper.classList.replace('is-portrait', 'is-landscape');
+              }
             }
           };
           if (img.complete) {
@@ -980,6 +1109,38 @@ import '../styles/global.css';
           }
         });
       }
+
+      // --- Custom Clerk Native Modal ---
+      document.getElementById('custom-login-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.Clerk.openSignIn({
+          signUpUrl: '/sign-up',
+          afterSignInUrl: window.location.href,
+          afterSignUpUrl: window.location.href,
+          appearance: {
+            variables: { colorBackground: 'transparent', colorText: '#ededed', colorPrimary: '#ededed', colorTextOnPrimaryBackground: '#0a0a0a', colorInputBackground: 'transparent', colorInputText: '#ededed', colorNeutral: 'rgba(237,237,237,0.5)', colorTextSecondary: 'rgba(237,237,237,0.5)' },
+            elements: {
+              cardBox: { backgroundColor: 'rgba(0, 0, 0, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', borderRadius: '24px' },
+              card: { backgroundColor: 'transparent', border: 'none', boxShadow: 'none' },
+              headerTitle: { color: '#ededed', fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.1em', fontWeight: '400', textTransform: 'uppercase' },
+              headerSubtitle: { display: 'none' },
+              socialButtonsBlockButton: { border: '1px solid rgba(237, 237, 237, 0.2)', borderRadius: '40px', color: '#ededed' },
+              socialButtonsBlockButtonText: { color: '#ededed' },
+              dividerLine: { background: 'rgba(237,237,237,0.1)' },
+              dividerText: { color: 'rgba(237,237,237,0.5)' },
+              formFieldLabel: { color: 'rgba(237,237,237,0.7)', fontFamily: "'Montserrat', sans-serif", fontSize: '0.8rem' },
+              formFieldInput: { background: 'transparent', border: '1px solid rgba(237,237,237,0.15)', borderRadius: '40px', color: '#ededed', padding: '0.75rem 1.25rem', outline: 'none', boxShadow: 'none' },
+              formFieldInputShowPasswordButton: { color: 'rgba(237,237,237,0.5)' },
+              formButtonPrimary: { background: '#ededed', color: '#0a0a0a', borderRadius: '40px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '500', fontFamily: "'Montserrat', sans-serif", border: 'none', padding: '0.75rem 2rem', fontSize: '0.85rem' },
+              footer: { background: 'transparent' },
+              footerActionText: { color: 'rgba(237,237,237,0.5)' },
+              footerActionLink: { color: '#ededed', fontWeight: '500' },
+              identityPreviewText: { color: '#ededed' },
+              identityPreviewEditButton: { color: 'rgba(237,237,237,0.5)' }
+            }
+          }
+        });
+      });
 
       function attachGalleryListeners() {
         // Delete buttons
@@ -1099,6 +1260,146 @@ import '../styles/global.css';
         }
       }
 
+      // --- Invite Modal Logic ---
+      function showInviteModal() {
+        if (window.Clerk && window.Clerk.closeSignIn) {
+          window.Clerk.closeSignIn();
+        }
+        openModal(inviteModal);
+      }
+
+      function checkHashForInvite() {
+        if (window.location.hash === '#invite') {
+          showInviteModal();
+        }
+      }
+
+      window.addEventListener('hashchange', checkHashForInvite);
+      
+      // Clerk's internal router might use pushState instead of native navigation
+      const originalPushState = history.pushState;
+      history.pushState = function(...args) {
+        originalPushState.apply(this, args);
+        checkHashForInvite();
+      };
+      const originalReplaceState = history.replaceState;
+      history.replaceState = function(...args) {
+        originalReplaceState.apply(this, args);
+        checkHashForInvite();
+      };
+
+      // Aggressive capture phase block to physically hijack Clerk's "Sign Up" anchor tags
+      window.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link && (link.getAttribute('href') === '/sign-up' || (link.href && link.href.includes('/sign-up')))) {
+          e.preventDefault();
+          e.stopPropagation(); // Stop React from handling the click
+          window.location.hash = '#invite';
+        }
+      }, true);
+
+      checkHashForInvite(); // On load
+
+      cancelInviteBtn?.addEventListener('click', () => {
+        closeModal(inviteModal);
+        originalPushState.call(history, '', document.title, window.location.pathname + window.location.search);
+      });
+
+      verifyInviteBtn?.addEventListener('click', async () => {
+        const code = inviteInput.value.trim();
+        if (!code) return;
+        
+        try {
+          const res = await fetch('/api/verify-invite', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code })
+          });
+          const data = await res.json();
+          
+          if (data.valid && data.inviteId) {
+            localStorage.setItem('clerk_invite_id', data.inviteId);
+            closeModal(inviteModal);
+            // Use original pushState to avoid our monkey-patch re-triggering invite modal
+            originalPushState.call(history, '', document.title, window.location.pathname + window.location.search);
+            
+            // Wait for DOM to flush then mount Clerk SignUp
+            setTimeout(() => {
+              try {
+                const signupModal = document.getElementById('custom-signup-modal');
+                openModal(signupModal);
+                
+                window.Clerk.mountSignUp(document.getElementById('clerk-signup-mount'), {
+                  fallbackRedirectUrl: `/finalize?inviteId=${data.inviteId}`,
+                  appearance: {
+                    variables: { colorBackground: 'transparent', colorText: '#ededed', colorPrimary: '#ededed', colorTextOnPrimaryBackground: 'black', colorInputBackground: 'transparent', colorInputText: '#ededed', colorNeutral: 'rgba(237,237,237,0.5)', colorTextSecondary: 'rgba(237,237,237,0.5)' },
+                    elements: {
+                      cardBox: { backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', boxShadow: 'none', borderRadius: '24px' },
+                      card: { backgroundColor: 'transparent', border: 'none', boxShadow: 'none' },
+                      headerTitle: { color: '#ededed', fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.1em', fontWeight: '400', textTransform: 'uppercase' },
+                      headerSubtitle: { display: 'none' },
+                      socialButtonsBlockButton: { border: '1px solid rgba(237, 237, 237, 0.2)', borderRadius: '40px', color: '#ededed' },
+                      socialButtonsBlockButtonText: { color: '#ededed' },
+                      dividerLine: { background: 'rgba(237,237,237,0.1)' },
+                      dividerText: { color: 'rgba(237,237,237,0.5)' },
+                      formFieldLabel: { color: 'rgba(237,237,237,0.7)', fontFamily: "'Montserrat', sans-serif", fontSize: '0.8rem' },
+                      formFieldInput: { background: 'transparent', border: 'none', borderBottom: '1px solid rgba(237,237,237,0.2)', borderRadius: '0', color: '#ededed', padding: '0.75rem 0', outline: 'none', boxShadow: 'none' },
+                      formButtonPrimary: { background: '#ededed', color: 'black', borderRadius: '40px', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '500', border: 'none', padding: '0.75rem 2rem' },
+                      footer: { background: 'transparent' },
+                      footerActionText: { color: 'rgba(237,237,237,0.5)' },
+                      footerActionLink: { color: '#ededed', fontWeight: '500' },
+                      identityPreviewText: { color: '#ededed' },
+                      identityPreviewEditButton: { color: 'rgba(237,237,237,0.5)' }
+                    }
+                  }
+                });
+                
+                // Poll for auth state change — when signup completes, auto-finalize
+                const watchInterval = setInterval(async () => {
+                  if (window.Clerk?.user?.id) {
+                    clearInterval(watchInterval);
+                    const storedInviteId = localStorage.getItem('clerk_invite_id');
+                    if (storedInviteId) {
+                      try {
+                        await fetch('/api/finalize-registration', {
+                          method: 'POST',
+                          headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify({ inviteId: parseInt(storedInviteId) })
+                        });
+                        localStorage.removeItem('clerk_invite_id');
+                      } catch (fe) {
+                        console.error('Auto-finalize error:', fe);
+                      }
+                    }
+                    window.location.reload();
+                  }
+                }, 1000);
+              } catch (mountErr) {
+                console.error('Clerk mountSignUp error:', mountErr);
+              }
+            }, 200);
+          } else {
+            inviteErrorMsg.innerText = data.error || 'Invalid Code';
+            inviteErrorMsg.style.opacity = '1';
+          }
+        } catch (e) {
+          console.error('Verify invite error:', e);
+          inviteErrorMsg.innerText = 'Network error';
+          inviteErrorMsg.style.opacity = '1';
+        }
+      });
+
+
+      // Fix Clerk "Manage your account info." → "Manage account info."
+      const clerkTextObserver = new MutationObserver(() => {
+        // Search broadly — Clerk nests text in various elements
+        document.querySelectorAll('[class*="cl-"] p, [class*="cl-"] span, [class*="cl-headerSubtitle"]').forEach(el => {
+          if (el.childElementCount === 0 && el.textContent?.trim() === 'Manage your account info.') {
+            el.textContent = 'Manage account info.';
+          }
+        });
+      });
+      clerkTextObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
 
       loadGallery();
     </script>

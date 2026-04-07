@@ -1,6 +1,9 @@
 import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel/serverless';
+import clerk from '@clerk/astro';
 
 export default defineConfig({
-  output: 'static',
-  base: process.env.VERCEL ? undefined : '/my-gallery',
+  output: 'hybrid',
+  adapter: vercel(),
+  integrations: [clerk()],
 });
