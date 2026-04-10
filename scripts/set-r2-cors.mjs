@@ -21,6 +21,8 @@ async function main() {
 <CORSConfiguration>
   <CORSRule>
     <AllowedOrigin>https://nitakupenda.eu.cc</AllowedOrigin>
+    <AllowedOrigin>https://penumbrae.uk</AllowedOrigin>
+    <AllowedOrigin>https://*.penumbrae.uk</AllowedOrigin>
     <AllowedOrigin>https://*.vercel.app</AllowedOrigin>
     <AllowedOrigin>http://localhost:4321</AllowedOrigin>
     <AllowedOrigin>http://localhost:3000</AllowedOrigin>

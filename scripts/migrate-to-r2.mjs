@@ -57,13 +57,13 @@ async function main() {
   // 2. Read and transform posts.json
   console.log('\nTransforming posts.json...');
   const posts = JSON.parse(readFileSync(POSTS_JSON, 'utf-8'));
-  const R2_BASE = 'https://img.nitakupenda.eu.cc';
+  const R2_BASE = 'https://img.penumbrae.uk';
 
   const migratedPosts = posts.map(post => ({
     ...post,
     images: (post.images || []).map(img => {
       // Convert relative path to absolute R2 URL
-      // /images/posts/p1_1.jpg → https://img.nitakupenda.eu.cc/posts/p1_1.jpg
+      // /images/posts/p1_1.jpg → https://img.penumbrae.uk/posts/p1_1.jpg
       const filename = basename(img);
       return `${R2_BASE}/posts/${filename}`;
     }),

@@ -45,7 +45,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       ContentType: file.type || 'image/jpeg',
     }));
 
-    const finalImageUrl = `https://img.nitakupenda.eu.cc/${key}`;
+    const finalImageUrl = `https://img.penumbrae.uk/${key}`;
 
     return new Response(JSON.stringify({ finalImageUrl }), { status: 200 });
   } catch (err: any) {

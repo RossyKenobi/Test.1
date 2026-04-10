@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const ownerClerkId = url.searchParams.get('clerk_id') || auth.userId;
 
     // Fetch existing data from R2 json
-    const r2Response = await fetch('https://img.nitakupenda.eu.cc/posts.json');
+    const r2Response = await fetch('https://img.penumbrae.uk/posts.json');
     if (!r2Response.ok) {
       throw new Error(`Failed to fetch from R2: ${r2Response.statusText}`);
     }
