@@ -1231,6 +1231,23 @@ if (currentUserId) {
               #clerk-signin-mount .cl-footerActionLink { margin-left: 0.25em !important; }
               #clerk-signin-mount .cl-alternativeMethods { margin: 0 !important; padding: 0 !important; text-align: center !important; }
               #clerk-signin-mount .cl-backLink { margin: 0 0 1.75rem 0 !important; display: block !important; width: 100% !important; text-align: center !important; }
+              #clerk-signin-mount .custom-reset-btn { 
+                background: transparent !important; 
+                background-color: transparent !important; 
+                border: 1px solid rgba(237,237,237,0.2) !important; 
+                box-shadow: none !important; 
+                border-radius: 40px !important; 
+                color: #ededed !important; 
+              }
+              #clerk-signin-mount .custom-reset-btn:hover {
+                background: rgba(255,255,255,0.05) !important;
+                border-color: rgba(237,237,237,0.4) !important;
+              }
+              #clerk-signin-mount .custom-reset-btn * { 
+                background: transparent !important; 
+                background-color: transparent !important; 
+                box-shadow: none !important; 
+              }
             `;
             document.head.appendChild(cs);
           }
@@ -1532,17 +1549,9 @@ if (currentUserId) {
 
           // Style Reset password button (has child elements, so check outside childElementCount block)
           if ((el.tagName === 'BUTTON' || el.tagName === 'A') && el.textContent?.trim() === 'Reset your password') {
-            el.style.setProperty('background', 'transparent', 'important');
-            el.style.setProperty('color', '#ededed', 'important');
-            el.style.setProperty('border', '0px solid transparent', 'important');
-            el.style.setProperty('outline', 'none', 'important');
-            el.style.setProperty('box-shadow', 'none', 'important');
-            el.style.setProperty('border-color', 'transparent', 'important');
-            el.style.setProperty('border-radius', '40px', 'important');
+            el.classList.add('custom-reset-btn');
             el.querySelectorAll('*').forEach(c => {
                c.style.setProperty('color', '#ededed', 'important');
-               c.style.setProperty('border', 'none', 'important');
-               c.style.setProperty('box-shadow', 'none', 'important');
             });
           }
 
