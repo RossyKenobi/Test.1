@@ -1590,18 +1590,20 @@ if (currentUserId) {
           if (el.classList.contains('cl-formButtonPrimary')) {
             const svgIcon = el.querySelector('svg');
             if (svgIcon) svgIcon.style.display = 'none';
-            el.style.setProperty('margin-bottom', '0', 'important');
-            // Walk up and zero ALL parent margins/paddings between button and card
-            let parent = el.parentElement;
-            const card = el.closest('.cl-card') || el.closest('#clerk-signin-mount') || el.closest('#clerk-signup-mount');
-            while (parent && parent !== card) {
-              parent.style.setProperty('margin-bottom', '0', 'important');
-              parent.style.setProperty('padding-bottom', '0', 'important');
-              parent = parent.parentElement;
+            const isAuthFlow = el.closest('#clerk-signin-mount') || el.closest('#clerk-signup-mount');
+            if (isAuthFlow) {
+              el.style.setProperty('margin-bottom', '0', 'important');
+              // Walk up and zero ALL parent margins/paddings between button and card
+              let parent = el.parentElement;
+              const card = el.closest('.cl-card') || el.closest('#clerk-signin-mount') || el.closest('#clerk-signup-mount');
+              while (parent && parent !== card) {
+                parent.style.setProperty('margin-bottom', '0', 'important');
+                parent.style.setProperty('padding-bottom', '0', 'important');
+                parent = parent.parentElement;
+              }
             }
 
             // ONLY inject cancel button for Sign In / Sign Up flows, avoid injecting in User Profile
-            const isAuthFlow = el.closest('#clerk-signin-mount') || el.closest('#clerk-signup-mount');
             // Place cancel button OUTSIDE the form, as sibling, for consistent gap
             const formContainer = el.closest('form');
             const insertParent = formContainer?.closest('.cl-main') || el.closest('.cl-main') || el.parentElement;
