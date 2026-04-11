@@ -1316,10 +1316,19 @@ if (currentUserId) {
       // Aggressive capture phase block to physically hijack Clerk's "Sign Up" anchor tags
       window.addEventListener('click', (e) => {
         const link = e.target.closest('a');
-        if (link && (link.getAttribute('href') === '/sign-up' || (link.href && link.href.includes('/sign-up')))) {
+        if (!link) return;
+        
+        const hrefAttr = link.getAttribute('href') || '';
+        const hrefFull = link.href || '';
+        
+        if (hrefAttr === '/sign-up' || hrefFull.includes('/sign-up') || hrefAttr === '/#invite' || hrefAttr === '#invite' || hrefFull.includes('#invite')) {
           e.preventDefault();
           e.stopPropagation(); // Stop React from handling the click
-          window.location.hash = '#invite';
+          if (window.location.hash !== '#invite') {
+            window.location.hash = '#invite';
+          } else {
+            checkHashForInvite();
+          }
         }
       }, true);
 
