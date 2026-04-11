@@ -1534,9 +1534,16 @@ if (currentUserId) {
           if ((el.tagName === 'BUTTON' || el.tagName === 'A') && el.textContent?.trim() === 'Reset your password') {
             el.style.setProperty('background', 'transparent', 'important');
             el.style.setProperty('color', '#ededed', 'important');
-            el.style.setProperty('border', 'none', 'important');
+            el.style.setProperty('border', '0px solid transparent', 'important');
+            el.style.setProperty('outline', 'none', 'important');
+            el.style.setProperty('box-shadow', 'none', 'important');
+            el.style.setProperty('border-color', 'transparent', 'important');
             el.style.setProperty('border-radius', '40px', 'important');
-            el.querySelectorAll('*').forEach(c => c.style.setProperty('color', '#ededed', 'important'));
+            el.querySelectorAll('*').forEach(c => {
+               c.style.setProperty('color', '#ededed', 'important');
+               c.style.setProperty('border', 'none', 'important');
+               c.style.setProperty('box-shadow', 'none', 'important');
+            });
           }
 
           // Force consistent spacing on Clerk elements (belt-and-suspenders with CSS)
@@ -1553,9 +1560,9 @@ if (currentUserId) {
             if (title === 'USE ANOTHER METHOD' || title.startsWith('FORGOT')) {
               el.style.setProperty('padding', '0.75rem 2rem', 'important');
             } else if (title.includes('PASSWORD') || title.includes('CHECK')) {
-              el.style.setProperty('padding', '0.1rem 2rem 0.4rem 2rem', 'important');
+              el.style.setProperty('padding', '0rem 2rem 0.6rem 2rem', 'important');
             } else {
-              el.style.setProperty('padding', '0.75rem 2rem', 'important');
+              el.style.setProperty('padding', '1rem 2rem', 'important');
             }
           }
 
@@ -1608,7 +1615,7 @@ if (currentUserId) {
               cancelBtn.style.transition = 'all 0.3s ease';
 
               const isSignUp = el.closest('#clerk-signup-mount');
-              cancelBtn.style.marginTop = isSignUp ? '0.17rem' : '0.15rem';
+              cancelBtn.style.marginTop = isSignUp ? '0.17rem' : '0rem';
               cancelBtn.style.marginBottom = '0';
               
               cancelBtn.onmouseenter = () => {
