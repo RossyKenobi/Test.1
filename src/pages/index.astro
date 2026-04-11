@@ -1132,7 +1132,7 @@ if (currentUserId) {
         openModal(signinModal);
         if (window.Clerk) {
           window.Clerk.mountSignIn(document.getElementById('clerk-signin-mount'), {
-            signUpUrl: '/sign-up',
+            signUpUrl: '/#invite',
             afterSignInUrl: window.location.href,
             afterSignUpUrl: window.location.href,
             appearance: {
@@ -1156,7 +1156,9 @@ if (currentUserId) {
                 footerActionLink: { color: '#ededed', fontWeight: '500', marginBottom: '0' },
                 identityPreviewText: { color: '#ededed' },
                 identityPreviewEditButton: { color: 'rgba(237,237,237,0.5)' },
-                form: { marginBottom: '0' }
+                form: { marginBottom: '0' },
+                alternativeMethodsBlockButton: { border: '1px solid rgba(237, 237, 237, 0.2)', borderRadius: '40px', color: '#ededed', background: 'transparent' },
+                alternativeMethodsBlockButtonText: { color: '#ededed', fontFamily: "'Montserrat', sans-serif" }
               }
             }
           });
@@ -1420,16 +1422,25 @@ if (currentUserId) {
       // Fix Clerk texts and inject dynamic cancel button below primary actions
       const clerkTextObserver = new MutationObserver(() => {
         document.querySelectorAll('[class*="cl-"]').forEach(el => {
-          // 1. Text overrides
+          // 1. Text overrides and specific native links
           if (el.childElementCount === 0) {
-            if (el.textContent?.trim() === 'Manage your account info.') {
+            const text = el.textContent?.trim();
+            if (text === 'Manage your account info.') {
               el.textContent = 'Manage account info.';
-            }
-            if (/my-gallery/i.test(el.textContent)) {
+            } else if (/my-gallery/i.test(text)) {
               el.textContent = el.textContent.replace(/my-gallery/ig, 'THE GALLERY');
-            }
-            if (/last used/i.test(el.textContent)) {
+            } else if (/last used/i.test(text)) {
               el.style.display = 'none';
+            } else if (text === 'Get help' && el.tagName === 'A') {
+              el.setAttribute('href', 'mailto:smyfy1@outlook.com');
+              el.onclick = (e) => { e.stopPropagation(); };
+            } else if (text === 'Back' && el.tagName === 'BUTTON') {
+               el.style.color = '#ededed';
+               el.style.textTransform = 'uppercase';
+               el.style.letterSpacing = '0.1em';
+               el.style.opacity = '0.7';
+               el.style.fontSize = '0.8rem';
+               el.style.background = 'transparent';
             }
           }
           
@@ -1462,7 +1473,7 @@ if (currentUserId) {
               cancelBtn.style.transition = 'all 0.3s ease';
 
               const isSignUp = el.closest('#clerk-signup-mount');
-              cancelBtn.style.marginTop = isSignUp ? '0.35rem' : '1.5rem';
+              cancelBtn.style.marginTop = isSignUp ? '0.35rem' : '0.5rem';
               cancelBtn.style.marginBottom = '0';
               
               cancelBtn.onmouseenter = () => {
