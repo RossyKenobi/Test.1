@@ -1551,9 +1551,9 @@ if (currentUserId) {
             const card = el.closest('.cl-card');
             const title = card?.querySelector('.cl-headerTitle')?.textContent?.trim()?.toUpperCase() || '';
             if (title === 'USE ANOTHER METHOD' || title.includes('FORGOT PASSWORD')) {
-              el.style.setProperty('padding', '1.5rem 2rem', 'important');
+              el.style.setProperty('padding', '0.5rem 2rem', 'important');
             } else {
-              el.style.setProperty('padding', '0.75rem 2rem 1rem 2rem', 'important');
+              el.style.setProperty('padding', '0.25rem 2rem', 'important');
             }
           }
 
@@ -1563,7 +1563,7 @@ if (currentUserId) {
             const header = el.closest('.cl-header');
             if (header) {
               if (title === 'USE ANOTHER METHOD' || title.includes('FORGOT PASSWORD')) {
-                header.style.marginBottom = '1.5rem';
+                header.style.marginBottom = '0.75rem';
               }
             }
           }
@@ -1606,7 +1606,7 @@ if (currentUserId) {
               cancelBtn.style.transition = 'all 0.3s ease';
 
               const isSignUp = el.closest('#clerk-signup-mount');
-              cancelBtn.style.marginTop = isSignUp ? '0.17rem' : '0.5rem';
+              cancelBtn.style.marginTop = isSignUp ? '0.17rem' : '0.25rem';
               cancelBtn.style.marginBottom = '0';
               
               cancelBtn.onmouseenter = () => {
