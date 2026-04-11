@@ -1600,10 +1600,12 @@ if (currentUserId) {
               parent = parent.parentElement;
             }
 
+            // ONLY inject cancel button for Sign In / Sign Up flows, avoid injecting in User Profile
+            const isAuthFlow = el.closest('#clerk-signin-mount') || el.closest('#clerk-signup-mount');
             // Place cancel button OUTSIDE the form, as sibling, for consistent gap
             const formContainer = el.closest('form');
             const insertParent = formContainer?.closest('.cl-main') || el.closest('.cl-main') || el.parentElement;
-            if (insertParent && !insertParent.querySelector('.custom-cancel-btn')) {
+            if (isAuthFlow && insertParent && !insertParent.querySelector('.custom-cancel-btn')) {
               const cancelBtn = document.createElement('button');
               cancelBtn.type = 'button';
               cancelBtn.className = 'custom-cancel-btn';
