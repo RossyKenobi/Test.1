@@ -1534,7 +1534,7 @@ if (currentUserId) {
           if ((el.tagName === 'BUTTON' || el.tagName === 'A') && el.textContent?.trim() === 'Reset your password') {
             el.style.setProperty('background', 'transparent', 'important');
             el.style.setProperty('color', '#ededed', 'important');
-            el.style.setProperty('border', '1px solid rgba(237,237,237,0.2)', 'important');
+            el.style.setProperty('border', 'none', 'important');
             el.style.setProperty('border-radius', '40px', 'important');
             el.querySelectorAll('*').forEach(c => c.style.setProperty('color', '#ededed', 'important'));
           }
@@ -1555,7 +1555,7 @@ if (currentUserId) {
             } else if (title.includes('PASSWORD') || title.includes('CHECK')) {
               el.style.setProperty('padding', '0.1rem 2rem 0.4rem 2rem', 'important');
             } else {
-              el.style.setProperty('padding', '0.5rem 2rem', 'important');
+              el.style.setProperty('padding', '0.75rem 2rem', 'important');
             }
           }
 
@@ -1608,7 +1608,7 @@ if (currentUserId) {
               cancelBtn.style.transition = 'all 0.3s ease';
 
               const isSignUp = el.closest('#clerk-signup-mount');
-              cancelBtn.style.marginTop = isSignUp ? '0.17rem' : '0.25rem';
+              cancelBtn.style.marginTop = isSignUp ? '0.17rem' : '0.15rem';
               cancelBtn.style.marginBottom = '0';
               
               cancelBtn.onmouseenter = () => {
