@@ -1,0 +1,379 @@
+---
+export const prerender = false;
+import '../../styles/global.css';
+import GalleryShared from '../../components/GalleryShared.astro';
+import { getUserByUsername, getRedirect, isAdmin, ensureUser } from '../../lib/auth';
+
+const { username } = Astro.params;
+
+if (!username) {
+  return Astro.redirect('/404', 302);
+}
+
+// Step 1: Look up user by username
+let pageOwner = await getUserByUsername(username);
+
+// Step 2: If not found, check redirects
+if (!pageOwner) {
+  const newUsername = await getRedirect(username);
+  if (newUsername) {
+    return Astro.redirect(`/u/${newUsername}`, 301);
+  }
+  return Astro.redirect('/404', 302);
+}
+
+// Step 3: Get current visitor's auth
+const auth = Astro.locals.auth();
+const currentUserId = auth?.userId || null;
+const isOwner = currentUserId === pageOwner.clerk_id;
+
+let isCurrentUserAdmin = false;
+let currentUsername = '';
+let currentUsernameLower = '';
+if (currentUserId) {
+  isCurrentUserAdmin = await isAdmin(currentUserId);
+  const dbUser = await ensureUser(currentUserId);
+  currentUsernameLower = dbUser?.username || '';
+  try {
+    const user = await Astro.locals.currentUser();
+    currentUsername = (user?.username || user?.firstName || 'User').toUpperCase();
+  } catch { currentUsername = 'USER'; }
+}
+
+const pageTitle = username.toUpperCase();
+const backgroundUrl = pageOwner.background_url || null;
+const showOnboarding = !backgroundUrl && isOwner;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{pageTitle} — THE GALLERY</title>
+    <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="minimal-nav profile-nav">
+      <a href="/" class="nav-brand">THE GALLERY</a>
+      <div class="nav-links">
+        { !currentUserId ? (
+          <a href="/" class="nav-link">Home</a>
+        ) : (
+          <div class="user-menu-wrapper" style="position: relative;">
+            <button class="nav-link user-menu-trigger" id="user-menu-trigger">{currentUsername}</button>
+            <div class="user-menu-popover" id="user-menu-popover">
+              {currentUsernameLower && (
+                <a href={`/u/${currentUsernameLower}`} class="user-menu-item">My Page</a>
+              )}
+              <button class="user-menu-item" id="user-menu-manage">Manage account</button>
+              <button class="user-menu-item user-menu-signout" id="user-menu-signout">Sign out</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
+
+    <!-- Profile Hero Section -->
+    <header class="profile-hero">
+      {backgroundUrl ? (
+        <img src={backgroundUrl} alt="Profile Background" class="profile-hero-bg" />
+      ) : (
+        <div class="profile-hero-bg profile-hero-default"></div>
+      )}
+      <div class="profile-hero-overlay"></div>
+      <div class="profile-hero-content">
+        <h1 class="profile-title">{pageTitle}</h1>
+      </div>
+    </header>
+
+    <!-- Change Background button (owner only) -->
+    {isOwner && (
+      <div class="profile-actions-bar">
+        <button class="action-btn" id="change-bg-btn">Change Background</button>
+      </div>
+    )}
+
+    <GalleryShared 
+      isAuthenticated={!!currentUserId} 
+      isAdmin={isCurrentUserAdmin} 
+      showInviteModal={false} 
+      showClerkModals={false} 
+    />
+
+    <footer style="padding: 2rem 0 1rem; text-align: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; letter-spacing: 0.1rem;">
+      &copy; 2026 THE GALLERY BY F.Y.
+    </footer>
+
+    <!-- Background Upload Modal -->
+    {isOwner && (
+      <div class="modal-overlay" id="bg-upload-modal">
+        <div class="modal-content" style="max-width: 500px;">
+          <h3 class="modal-title">SET BACKGROUND</h3>
+          <p class="modal-caption" style="margin-bottom: 1.5rem;">Choose an image for your profile background</p>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <label for="bg-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose File</label>
+            <span id="bg-file-name" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em;">No file chosen</span>
+          </div>
+          <div id="bg-preview-container" style="display: none; margin-bottom: 1.5rem;">
+            <img id="bg-preview-img" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 16px;" />
+          </div>
+          <div class="modal-actions" style="justify-content: center; gap: 1.5rem;">
+            <button class="action-btn" id="cancel-bg-upload">Cancel</button>
+            <button class="action-btn confirm" id="confirm-bg-upload">Upload</button>
+          </div>
+        </div>
+      </div>
+
+      <input type="file" id="bg-file-input" accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0);" />
+    )}
+
+    <!-- Onboarding Modal -->
+    {showOnboarding && (
+      <div class="modal-overlay" id="onboarding-modal">
+        <div class="modal-content" style="max-width: 450px;">
+          <h3 class="modal-title" style="letter-spacing: 0.15em;">WELCOME</h3>
+          <p class="modal-caption" style="margin-bottom: 2rem; font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.6);">
+            Welcome to your own page! Set a background image to make it yours.
+          </p>
+          <div class="modal-actions" style="justify-content: center; gap: 1.5rem;">
+            <button class="action-btn" id="onboarding-later">Set Later</button>
+            <button class="action-btn confirm" id="onboarding-upload">Upload Background</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <style is:global>
+      /* --- Profile Page Specific Styles --- */
+      .profile-hero {
+        position: relative;
+        height: 40vh;
+        min-height: 280px;
+        width: 100%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .profile-hero-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+      }
+      .profile-hero-default {
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+      }
+      .profile-hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        z-index: 1;
+      }
+      .profile-hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+      }
+      .profile-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(2.5rem, 6vw, 6rem);
+        font-weight: 700;
+        color: white;
+        letter-spacing: 0.05em;
+        margin: 0;
+        text-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      }
+      .profile-actions-bar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 1rem 4rem;
+        max-width: 1800px;
+        margin: 0 auto;
+      }
+      .profile-nav {
+        background: rgba(0, 0, 0, 0.3) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+      }
+
+      /* Edit mode styles */
+      body.is-editing .gallery-item-wrapper { cursor: grab; }
+      body.is-editing .sortable-ghost { opacity: 0.3; }
+      body.is-editing .sortable-drag { cursor: grabbing !important; }
+      body.is-editing .delete-btn {
+        display: flex !important;
+        opacity: 1 !important;
+        background: #ef4444 !important;
+      }
+      .hidden { display: none !important; }
+
+      /* PhotoSwipe */
+      .pswp__img {
+        border-radius: 4px;
+        box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+      }
+      .pswp__item { padding: 0 10% !important; }
+
+      @media (max-width: 768px) {
+        .profile-actions-bar {
+          padding: 0.75rem 1.5rem;
+        }
+      }
+    </style>
+
+    <script define:vars={{ currentUserId, isCurrentUserAdmin, isOwner, pageOwner, showOnboarding }}>
+      window.__AUTH__ = {
+        userId: currentUserId,
+        isAdmin: isCurrentUserAdmin,
+      };
+      window.__PROFILE__ = {
+        isOwner: isOwner,
+        ownerClerkId: pageOwner.clerk_id,
+        showOnboarding: showOnboarding,
+      };
+    </script>
+    <script>
+      import { initGallery } from '../../scripts/gallery';
+      import { initUserMenu, initNavigationInterception, initClerkTextObserver } from '../../scripts/clerk-auth';
+
+      const AUTH = (window as any).__AUTH__ || {};
+      const PROFILE = (window as any).__PROFILE__ || {};
+
+      // User menu
+      initUserMenu();
+      initNavigationInterception();
+      initClerkTextObserver();
+
+      // Gallery (personal page mode)
+      initGallery({
+        mode: 'personal',
+        userId: AUTH.userId || null,
+        isAdmin: AUTH.isAdmin || false,
+        ownerClerkId: PROFILE.ownerClerkId,
+        canSort: PROFILE.isOwner || AUTH.isAdmin,
+        postsApiUrl: `/api/posts?owner=${PROFILE.ownerClerkId}&sort=personal`,
+        saveScope: 'personal',
+      });
+
+      // --- Onboarding Modal ---
+      if (PROFILE.showOnboarding && !localStorage.getItem('skip_bg_setup')) {
+        const onboardingModal = document.getElementById('onboarding-modal');
+        if (onboardingModal) {
+          onboardingModal.classList.add('active');
+          document.body.style.overflow = 'hidden';
+
+          document.getElementById('onboarding-later')?.addEventListener('click', () => {
+            localStorage.setItem('skip_bg_setup', 'true');
+            onboardingModal.classList.remove('active');
+            document.body.style.overflow = '';
+          });
+
+          document.getElementById('onboarding-upload')?.addEventListener('click', () => {
+            onboardingModal.classList.remove('active');
+            document.body.style.overflow = '';
+            // Trigger background upload modal
+            const bgModal = document.getElementById('bg-upload-modal');
+            if (bgModal) {
+              bgModal.classList.add('active');
+              document.body.style.overflow = 'hidden';
+            }
+          });
+        }
+      }
+
+      // --- Background Upload Logic ---
+      if (PROFILE.isOwner) {
+        const bgModal = document.getElementById('bg-upload-modal');
+        const bgFileInput = document.getElementById('bg-file-input') as HTMLInputElement;
+        const bgFileName = document.getElementById('bg-file-name');
+        const bgPreviewContainer = document.getElementById('bg-preview-container');
+        const bgPreviewImg = document.getElementById('bg-preview-img') as HTMLImageElement;
+
+        document.getElementById('change-bg-btn')?.addEventListener('click', () => {
+          if (bgModal) {
+            bgModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+          }
+        });
+
+        document.getElementById('cancel-bg-upload')?.addEventListener('click', () => {
+          if (bgModal) {
+            bgModal.classList.remove('active');
+            if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
+          }
+        });
+
+        bgFileInput?.addEventListener('change', () => {
+          if (bgFileInput.files && bgFileInput.files.length > 0) {
+            const file = bgFileInput.files[0];
+            if (bgFileName) bgFileName.textContent = file.name;
+            // Preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              if (bgPreviewImg) bgPreviewImg.src = e.target!.result as string;
+              if (bgPreviewContainer) bgPreviewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        document.getElementById('confirm-bg-upload')?.addEventListener('click', async () => {
+          if (!bgFileInput?.files?.length) return;
+
+          const file = bgFileInput.files[0];
+          const formData = new FormData();
+          formData.append('file', file);
+
+          // Close modal, show progress
+          if (bgModal) {
+            bgModal.classList.remove('active');
+          }
+
+          try {
+            const res = await fetch('/api/user/background', {
+              method: 'POST',
+              body: formData,
+            });
+            const data = await res.json();
+            if (res.ok && data.url) {
+              // Update background immediately
+              const heroBg = document.querySelector('.profile-hero-bg');
+              if (heroBg) {
+                if (heroBg.tagName === 'IMG') {
+                  (heroBg as HTMLImageElement).src = data.url;
+                } else {
+                  // Replace div with img
+                  const img = document.createElement('img');
+                  img.src = data.url;
+                  img.alt = 'Profile Background';
+                  img.className = 'profile-hero-bg';
+                  heroBg.replaceWith(img);
+                }
+              }
+              // Clear onboarding skip since they've uploaded
+              localStorage.removeItem('skip_bg_setup');
+            } else {
+              alert('Upload failed: ' + (data.error || 'Unknown error'));
+            }
+          } catch (e: any) {
+            alert('Upload error: ' + e.message);
+          }
+          if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
+        });
+      }
+    </script>
+  </body>
+</html>
