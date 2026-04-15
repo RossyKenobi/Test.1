@@ -42,6 +42,22 @@ export const GET: APIRoute = async ({ locals }) => {
       }
     }
 
+    try {
+      await sql`ALTER TABLE users ADD COLUMN profile_title VARCHAR(255)`;
+      results.push('Added users.profile_title column');
+    } catch (e: any) {
+      if (e.message?.includes('already exists')) results.push('users.profile_title already exists, skipped');
+      else throw e;
+    }
+
+    try {
+      await sql`ALTER TABLE users ADD COLUMN profile_subtitle VARCHAR(255)`;
+      results.push('Added users.profile_subtitle column');
+    } catch (e: any) {
+      if (e.message?.includes('already exists')) results.push('users.profile_subtitle already exists, skipped');
+      else throw e;
+    }
+
     // 3. Add personal_sort_order column to stacks
     try {
       await sql`ALTER TABLE stacks ADD COLUMN personal_sort_order INTEGER DEFAULT 0`;

@@ -40,7 +40,8 @@ if (currentUserId) {
   } catch { currentUsername = 'USER'; }
 }
 
-const pageTitle = username.toUpperCase();
+const pageTitle = pageOwner.profile_title || `${username.toUpperCase()}'s Page`;
+const pageSubtitle = pageOwner.profile_subtitle || 'Selected Works';
 const backgroundUrl = pageOwner.background_url || null;
 const showOnboarding = !backgroundUrl && isOwner;
 ---
@@ -56,19 +57,20 @@ const showOnboarding = !backgroundUrl && isOwner;
   </head>
   <body>
     <!-- Navigation -->
-    <nav class="minimal-nav profile-nav">
+    <nav class="minimal-nav">
       <a href="/" class="nav-brand">THE GALLERY</a>
       <div class="nav-links">
+        <a href="#contact" class="nav-link">Contact</a>
         { !currentUserId ? (
-          <a href="/" class="nav-link">Home</a>
+          <button class="nav-link" id="custom-login-btn">Login</button>
         ) : (
           <div class="user-menu-wrapper" style="position: relative;">
             <button class="nav-link user-menu-trigger" id="user-menu-trigger">{currentUsername}</button>
             <div class="user-menu-popover" id="user-menu-popover">
-              {currentUsernameLower && (
+              {currentUsernameLower && currentUsernameLower !== username?.toLowerCase() && (
                 <a href={`/u/${currentUsernameLower}`} class="user-menu-item">My Page</a>
               )}
-              <button class="user-menu-item" id="user-menu-manage">Manage account</button>
+              <button class="user-menu-item" id="user-menu-manage">Account</button>
               <button class="user-menu-item user-menu-signout" id="user-menu-signout">Sign out</button>
             </div>
           </div>
@@ -79,29 +81,35 @@ const showOnboarding = !backgroundUrl && isOwner;
     <!-- Profile Hero Section -->
     <header class="profile-hero">
       {backgroundUrl ? (
-        <img src={backgroundUrl} alt="Profile Background" class="profile-hero-bg" />
+        <img src={backgroundUrl} alt="Profile Background" class="profile-hero-bg" id="profile-hero-bg-img" />
       ) : (
-        <div class="profile-hero-bg profile-hero-default"></div>
+        <img src="/images/hero_background.jpg" alt="Profile Background Default" class="profile-hero-bg" id="profile-hero-bg-img" />
       )}
-      <div class="profile-hero-overlay"></div>
-      <div class="profile-hero-content">
-        <h1 class="profile-title">{pageTitle}</h1>
+      <div class="profile-hero-content" style="padding-top: 180px;">
+        <h1 class="hero-title" id="profile-title-edit" contenteditable={isOwner ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={isOwner ? "cursor: text;" : ""}>{pageTitle}</h1>
+        <p class="hero-subtitle" id="profile-subtitle-edit" contenteditable={isOwner ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={isOwner ? "cursor: text;" : ""}>{pageSubtitle}</p>
       </div>
     </header>
 
-    <!-- Change Background button (owner only) -->
-    {isOwner && (
-      <div class="profile-actions-bar">
-        <button class="action-btn" id="change-bg-btn">Change Background</button>
-      </div>
-    )}
-
     <GalleryShared 
       isAuthenticated={!!currentUserId} 
-      isAdmin={isCurrentUserAdmin} 
+      isAdmin={isOwner || isCurrentUserAdmin} 
       showInviteModal={false} 
       showClerkModals={false} 
+      showChangeBgBtn={isOwner}
     />
+
+    <section id="contact" class="contact-section">
+      <div class="contact-container">
+        <h2 class="contact-title">Contact</h2>
+        <div class="contact-list">
+          <div class="contact-item">
+            <svg class="contact-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            <a href={`mailto:${pageOwner.email?.toUpperCase()}`}>{pageOwner.email?.toUpperCase() || 'NO EMAIL REGISTERED'}</a>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <footer style="padding: 2rem 0 1rem; text-align: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; letter-spacing: 0.1rem;">
       &copy; 2026 THE GALLERY BY F.Y.
@@ -110,9 +118,9 @@ const showOnboarding = !backgroundUrl && isOwner;
     <!-- Background Upload Modal -->
     {isOwner && (
       <div class="modal-overlay" id="bg-upload-modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="max-width: 500px; transform: translateY(5vh);">
           <h3 class="modal-title">SET BACKGROUND</h3>
-          <p class="modal-caption" style="margin-bottom: 1.5rem;">Choose an image for your profile background</p>
+          <p class="modal-caption" style="margin-top: 2rem; margin-bottom: 1.5rem;">Set a background for your own page</p>
           <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
             <label for="bg-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose File</label>
             <span id="bg-file-name" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em;">No file chosen</span>
@@ -133,14 +141,14 @@ const showOnboarding = !backgroundUrl && isOwner;
     <!-- Onboarding Modal -->
     {showOnboarding && (
       <div class="modal-overlay" id="onboarding-modal">
-        <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-content" style="max-width: 450px; transform: translateY(5vh);">
           <h3 class="modal-title" style="letter-spacing: 0.15em;">WELCOME</h3>
-          <p class="modal-caption" style="margin-bottom: 2rem; font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.6);">
-            Welcome to your own page! Set a background image to make it yours.
+          <p class="modal-caption" style="margin-top: 2.5rem; margin-bottom: 2rem; font-size: 0.85rem; line-height: 1.6; color: rgba(255,255,255,0.6);">
+            Welcome to your own page! Set a background to start.
           </p>
-          <div class="modal-actions" style="justify-content: center; gap: 1.5rem;">
-            <button class="action-btn" id="onboarding-later">Set Later</button>
-            <button class="action-btn confirm" id="onboarding-upload">Upload Background</button>
+          <div class="modal-actions" style="flex-direction: column; align-items: stretch; justify-content: center; gap: 1rem;">
+            <button class="action-btn confirm" id="onboarding-upload" style="width: 100%; white-space: nowrap;">Upload Background</button>
+            <button class="action-btn" id="onboarding-later" style="width: 100%; white-space: nowrap;">Set Later</button>
           </div>
         </div>
       </div>
@@ -150,36 +158,39 @@ const showOnboarding = !backgroundUrl && isOwner;
       /* --- Profile Page Specific Styles --- */
       .profile-hero {
         position: relative;
-        height: 40vh;
-        min-height: 280px;
+        height: 48vh;
+        min-height: 380px;
         width: 100%;
-        overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
+        margin-bottom: 4rem; /* Lower gallery grid further */
       }
       .profile-hero-bg {
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%;
+        height: 100vh;
         object-fit: cover;
-        z-index: 0;
+        object-position: center;
+        z-index: -2;
+      }
+      .hero-overlay-blur {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0);
+        backdrop-filter: blur(0px);
+        -webkit-backdrop-filter: blur(0px);
+        z-index: -1;
+        pointer-events: none;
+        transition: backdrop-filter 0.1s linear, -webkit-backdrop-filter 0.1s linear, background 0.1s linear;
       }
       .profile-hero-default {
         background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
-      }
-      .profile-hero-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-        z-index: 1;
       }
       .profile-hero-content {
         position: relative;
@@ -195,6 +206,10 @@ const showOnboarding = !backgroundUrl && isOwner;
         margin: 0;
         text-shadow: 0 4px 15px rgba(0,0,0,0.4);
       }
+      [contenteditable="true"]:focus {
+        outline: none;
+      }
+      /* Inherit hero-title and hero-subtitle from global.css */
       .profile-actions-bar {
         display: flex;
         justify-content: flex-end;
@@ -202,11 +217,6 @@ const showOnboarding = !backgroundUrl && isOwner;
         padding: 1rem 4rem;
         max-width: 1800px;
         margin: 0 auto;
-      }
-      .profile-nav {
-        background: rgba(0, 0, 0, 0.3) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
       }
 
       /* Edit mode styles */
@@ -247,15 +257,18 @@ const showOnboarding = !backgroundUrl && isOwner;
     </script>
     <script>
       import { initGallery } from '../../scripts/gallery';
-      import { initUserMenu, initNavigationInterception, initClerkTextObserver } from '../../scripts/clerk-auth';
+      import { initUserMenu, initNavigationInterception, initClerkTextObserver, initClerkSignInAndInvite } from '../../scripts/clerk-auth';
+      import { initHeroScroll } from '../../scripts/hero-scroll';
 
       const AUTH = (window as any).__AUTH__ || {};
       const PROFILE = (window as any).__PROFILE__ || {};
 
-      // User menu
+      // User menu & scroll
       initUserMenu();
       initNavigationInterception();
       initClerkTextObserver();
+      initHeroScroll();
+      initClerkSignInAndInvite();
 
       // Gallery (personal page mode)
       initGallery({
@@ -296,6 +309,52 @@ const showOnboarding = !backgroundUrl && isOwner;
 
       // --- Background Upload Logic ---
       if (PROFILE.isOwner) {
+        // Text editing logic
+        const titleEl = document.getElementById('profile-title-edit');
+        const subtitleEl = document.getElementById('profile-subtitle-edit');
+        let textTimeout: any;
+
+        const handleTextChange = () => {
+          clearTimeout(textTimeout);
+          textTimeout = setTimeout(async () => {
+            if (!titleEl || !subtitleEl) return;
+            try {
+              await fetch('/api/user/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: titleEl.innerText.trim(),
+                  subtitle: subtitleEl.innerText.trim()
+                })
+              });
+            } catch (e) {
+              console.error('Failed to save profile text', e);
+            }
+          }, 800);
+        };
+
+        titleEl?.addEventListener('input', handleTextChange);
+        subtitleEl?.addEventListener('input', handleTextChange);
+        
+        const preventEnter = (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            (e.target as HTMLElement).blur();
+          }
+        };
+        titleEl?.addEventListener('keydown', preventEnter);
+        subtitleEl?.addEventListener('keydown', preventEnter);
+
+        // Allow clicking outside to blur explicitly
+        document.addEventListener('click', (e) => {
+          if (titleEl && !titleEl.contains(e.target as Node) && 
+              subtitleEl && !subtitleEl.contains(e.target as Node)) {
+            titleEl.blur();
+            subtitleEl.blur();
+          }
+        });
+
+        // Upload logic
         const bgModal = document.getElementById('bg-upload-modal');
         const bgFileInput = document.getElementById('bg-file-input') as HTMLInputElement;
         const bgFileName = document.getElementById('bg-file-name');
@@ -342,6 +401,19 @@ const showOnboarding = !backgroundUrl && isOwner;
             bgModal.classList.remove('active');
           }
 
+          const progressModal = document.getElementById('progress-modal');
+          const progressTitle = document.getElementById('progress-title');
+          const progressStatusText = document.getElementById('progress-status-text');
+          const progressBarInner = document.getElementById('progress-bar-inner');
+          const refreshBtn = document.getElementById('refresh-page-btn');
+
+          if (progressModal) {
+            progressModal.classList.add('active');
+            if (progressTitle) progressTitle.innerText = 'Uploading Background...';
+            if (progressStatusText) progressStatusText.innerText = 'Uploading to Server...';
+            if (progressBarInner) progressBarInner.style.width = '50%';
+          }
+
           try {
             const res = await fetch('/api/user/background', {
               method: 'POST',
@@ -349,27 +421,18 @@ const showOnboarding = !backgroundUrl && isOwner;
             });
             const data = await res.json();
             if (res.ok && data.url) {
-              // Update background immediately
-              const heroBg = document.querySelector('.profile-hero-bg');
-              if (heroBg) {
-                if (heroBg.tagName === 'IMG') {
-                  (heroBg as HTMLImageElement).src = data.url;
-                } else {
-                  // Replace div with img
-                  const img = document.createElement('img');
-                  img.src = data.url;
-                  img.alt = 'Profile Background';
-                  img.className = 'profile-hero-bg';
-                  heroBg.replaceWith(img);
-                }
+              if (progressBarInner) progressBarInner.style.width = '100%';
+              if (progressStatusText) progressStatusText.innerText = 'Upload complete! Please refresh.';
+              if (refreshBtn) {
+                refreshBtn.style.display = 'block';
+                refreshBtn.classList.add('active');
               }
-              // Clear onboarding skip since they've uploaded
               localStorage.removeItem('skip_bg_setup');
             } else {
-              alert('Upload failed: ' + (data.error || 'Unknown error'));
+              if (progressStatusText) progressStatusText.innerText = 'Upload failed: ' + (data.error || 'Unknown error');
             }
           } catch (e: any) {
-            alert('Upload error: ' + e.message);
+            if (progressStatusText) progressStatusText.innerText = 'Upload error: ' + e.message;
           }
           if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
         });
