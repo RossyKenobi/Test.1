@@ -23,12 +23,14 @@ if (currentUserId) {
 
 let siteTitle = 'Silent Flânerie';
 let siteSubtitle = 'Unscripted drifts through the quotidian.';
+let siteBackground = '/images/hero_background.jpg';
 try {
   const { sql } = await import('../lib/db');
-  const rows = await sql`SELECT key, value FROM site_settings WHERE key IN ('site_title', 'site_subtitle')`;
+  const rows = await sql`SELECT key, value FROM site_settings WHERE key IN ('site_title', 'site_subtitle', 'site_background')`;
   rows.forEach(r => {
     if (r.key === 'site_title') siteTitle = r.value;
     if (r.key === 'site_subtitle') siteSubtitle = r.value;
+    if (r.key === 'site_background') siteBackground = r.value;
   });
 } catch (e) {
   // DB not migrated yet
@@ -72,7 +74,7 @@ try {
 
     <!-- Full-Screen Hero Section -->
     <header class="hero-section">
-      <img src="/images/hero_background.jpg" alt="Hero Photography" class="hero-bg" />
+      <img src={siteBackground} alt="Hero Photography" class="hero-bg" id="hero-bg-img" />
       <div class="hero-content" style="pointer-events: none;">
         <h1 class="hero-title" id="site-title-edit" contenteditable={isCurrentUserAdmin ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={(isCurrentUserAdmin ? "cursor: text; " : "") + "pointer-events: auto;"}>{siteTitle}</h1>
         <p class="hero-subtitle" id="site-subtitle-edit" contenteditable={isCurrentUserAdmin ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={(isCurrentUserAdmin ? "cursor: text; " : "") + "pointer-events: auto;"}>{siteSubtitle}</p>
@@ -92,6 +94,7 @@ try {
       showEditControls={!!currentUserId} 
       showInviteModal={true} 
       showClerkModals={true} 
+      showChangeBgBtn={isCurrentUserAdmin}
     />
 
     <section id="contact" class="contact-section">
@@ -113,6 +116,29 @@ try {
     <footer style="padding: 2rem 0 1rem; text-align: center; color: rgba(255,255,255,0.3); font-size: 0.8rem; letter-spacing: 0.1rem;">
       &copy; 2026 THE GALLERY BY F.Y. | v1.3.0
     </footer>
+
+    <!-- Background Upload Modal (Admin only) -->
+    {isCurrentUserAdmin && (
+      <div class="modal-overlay" id="bg-upload-modal">
+        <div class="modal-content" style="max-width: 500px; transform: translateY(5vh);">
+          <h3 class="modal-title">SET BACKGROUND</h3>
+          <p class="modal-caption" style="margin-top: 2rem; margin-bottom: 1.5rem;">Choose a background for the main page</p>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <label for="bg-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose File</label>
+            <span id="bg-file-name" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em;">No file chosen</span>
+          </div>
+          <div id="bg-preview-container" style="display: none; margin-bottom: 1.5rem;">
+            <img id="bg-preview-img" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 16px;" />
+          </div>
+          <div class="modal-actions" style="justify-content: center; gap: 1.5rem;">
+            <button class="action-btn" id="cancel-bg-upload">Cancel</button>
+            <button class="action-btn confirm" id="confirm-bg-upload">Upload</button>
+          </div>
+        </div>
+      </div>
+
+      <input type="file" id="bg-file-input" accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0);" />
+    )}
 
     <style is:global>
       /* --- Hero Scroll Effect --- */
@@ -288,6 +314,84 @@ try {
             titleEl.blur();
             subtitleEl.blur();
           }
+        });
+
+        // Background Upload Logic
+        const bgModal = document.getElementById('bg-upload-modal');
+        const bgFileInput = document.getElementById('bg-file-input') as HTMLInputElement;
+        const bgFileName = document.getElementById('bg-file-name');
+        const bgPreviewContainer = document.getElementById('bg-preview-container');
+        const bgPreviewImg = document.getElementById('bg-preview-img') as HTMLImageElement;
+
+        document.getElementById('change-bg-btn')?.addEventListener('click', () => {
+          if (bgModal) {
+            bgModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+          }
+        });
+
+        document.getElementById('cancel-bg-upload')?.addEventListener('click', () => {
+          if (bgModal) {
+            bgModal.classList.remove('active');
+            if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
+          }
+        });
+
+        bgFileInput?.addEventListener('change', () => {
+          if (bgFileInput.files && bgFileInput.files.length > 0) {
+            const file = bgFileInput.files[0];
+            if (bgFileName) bgFileName.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              if (bgPreviewImg) bgPreviewImg.src = e.target!.result as string;
+              if (bgPreviewContainer) bgPreviewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        document.getElementById('confirm-bg-upload')?.addEventListener('click', async () => {
+          if (!bgFileInput?.files?.length) return;
+
+          const file = bgFileInput.files[0];
+          const formData = new FormData();
+          formData.append('file', file);
+
+          if (bgModal) bgModal.classList.remove('active');
+
+          const progressModal = document.getElementById('progress-modal');
+          const progressTitle = document.getElementById('progress-title');
+          const progressStatusText = document.getElementById('progress-status-text');
+          const progressBarInner = document.getElementById('progress-bar-inner');
+          const refreshBtn = document.getElementById('refresh-page-btn');
+
+          if (progressModal) {
+            progressModal.classList.add('active');
+            if (progressTitle) progressTitle.innerText = 'Uploading Background...';
+            if (progressStatusText) progressStatusText.innerText = 'Uploading to Server...';
+            if (progressBarInner) progressBarInner.style.width = '50%';
+          }
+
+          try {
+            const res = await fetch('/api/site-background', {
+              method: 'POST',
+              body: formData,
+            });
+            const data = await res.json();
+            if (res.ok && data.url) {
+              if (progressBarInner) progressBarInner.style.width = '100%';
+              if (progressStatusText) progressStatusText.innerText = 'Upload complete! Please refresh.';
+              if (refreshBtn) {
+                refreshBtn.style.display = 'block';
+                refreshBtn.classList.add('active');
+              }
+            } else {
+              if (progressStatusText) progressStatusText.innerText = 'Upload failed: ' + (data.error || 'Unknown error');
+            }
+          } catch (e: any) {
+            if (progressStatusText) progressStatusText.innerText = 'Upload error: ' + e.message;
+          }
+          if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
         });
       }
     </script>
