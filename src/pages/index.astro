@@ -73,9 +73,9 @@ try {
     <!-- Full-Screen Hero Section -->
     <header class="hero-section">
       <img src="/images/hero_background.jpg" alt="Hero Photography" class="hero-bg" />
-      <div class="hero-content">
-        <h1 class="hero-title" id="site-title-edit" contenteditable={isCurrentUserAdmin ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={isCurrentUserAdmin ? "cursor: text;" : ""}>{siteTitle}</h1>
-        <p class="hero-subtitle" id="site-subtitle-edit" contenteditable={isCurrentUserAdmin ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={isCurrentUserAdmin ? "cursor: text;" : ""}>{siteSubtitle}</p>
+      <div class="hero-content" style="pointer-events: none;">
+        <h1 class="hero-title" id="site-title-edit" contenteditable={isCurrentUserAdmin ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={(isCurrentUserAdmin ? "cursor: text; " : "") + "pointer-events: auto;"}>{siteTitle}</h1>
+        <p class="hero-subtitle" id="site-subtitle-edit" contenteditable={isCurrentUserAdmin ? "true" : undefined} spellcheck="false" suppressContentEditableWarning="true" style={(isCurrentUserAdmin ? "cursor: text; " : "") + "pointer-events: auto;"}>{siteSubtitle}</p>
       </div>
       <div class="scroll-indicator">
         <span>SCROLL</span>
@@ -152,6 +152,15 @@ try {
       body.is-editing .gallery-item-wrapper {
         cursor: grab;
       }
+      body.is-editing .gallery-item-wrapper::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border: 1px dashed rgba(255, 255, 255, 0.3);
+        border-radius: 24px;
+        pointer-events: none;
+        z-index: 1;
+      }
       body.is-editing .sortable-ghost {
         opacity: 0.3;
       }
@@ -162,6 +171,7 @@ try {
         display: flex !important;
         opacity: 1 !important;
         background: #ef4444 !important;
+        pointer-events: auto !important;
       }
       .hidden { display: none !important; }
 
@@ -178,7 +188,7 @@ try {
         padding: 12px 24px;
         cursor: pointer;
         font-size: 0.9rem;
-        transition: color 0.3s;
+        transition: opacity 0.3s ease, transform 0.2s ease;
       }
       .tab-btn.active {
         color: white;

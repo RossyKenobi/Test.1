@@ -373,6 +373,7 @@ header {
   z-index: 10;
   border: none;
   cursor: pointer;
+  pointer-events: none; /* Block clicks when not in edit mode */
 }
 
 /* Project a full-canvas static dashed border from the unscaled wrapper */
