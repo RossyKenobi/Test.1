@@ -29,7 +29,8 @@ let sortableInstance: any = null;
 let initialOrder: string[] = [];
 let filePickerActive = false;
 let pendingAction: string | null = null;
-let pendingPostId: string | null = null;
+let pendingDeletedStackIds: string[] = [];  // Batch stack deletes
+let hiddenStatusChanged = false; // Track dirty state for hidden toggle delaying
 let currentEditingWrapper: HTMLElement | null = null;
 let currentMiniImages: string[] = [];
 let originalMiniImages = '';
@@ -170,6 +171,20 @@ function createGalleryItemHTML(post: any): string {
   if (galleryConfig.userId) {
     canEdit = galleryConfig.isAdmin || post.owner_clerk_id === galleryConfig.userId;
   }
+  
+  const isHideBtnVisible = galleryConfig.mode === 'main' && galleryConfig.isAdmin;
+  let hideClass = '';
+  if (isHideBtnVisible && post.is_hidden_from_global) hideClass = 'is-ghosted';
+
+  const hideBtnHTML = isHideBtnVisible ? `
+    <button class="hide-btn" aria-label="Toggle Hide" data-id="${post.id}" data-hidden="${post.is_hidden_from_global || false}" onclick="event.stopPropagation();">
+      <svg viewBox="0 0 24 24">
+        ${post.is_hidden_from_global 
+          ? '<line x1="5" y1="12" x2="19" y2="12"></line><line x1="12" y1="5" x2="12" y2="19"></line>' 
+          : '<line x1="5" y1="12" x2="19" y2="12"></line>'}
+      </svg>
+    </button>
+  ` : '';
 
   const deleteBtnHTML = canEdit ? `
         <button class="delete-btn" aria-label="Delete Post" data-id="${post.id}" onclick="event.stopPropagation();">
@@ -181,10 +196,11 @@ function createGalleryItemHTML(post: any): string {
         </button>` : '';
 
   return `
-    <div class="gallery-item-wrapper ${orientationClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-needs-check="${post.isPortrait === undefined}">
+    <div class="gallery-item-wrapper ${orientationClass} ${hideClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-needs-check="${post.isPortrait === undefined}">
       <a href="${thumbnail}" class="gallery-item" data-pswp-src="${thumbnail}">
         <img src="${thumbnail}" alt="${post.caption || 'Gallery Post'}" loading="lazy" decoding="async" />
         ${deleteBtnHTML}
+        ${hideBtnHTML}
         ${isCarousel ? `
           <div class="stack-icon" aria-label="${images.length} images">
             <svg viewBox="0 0 24 24">
@@ -201,7 +217,22 @@ function createGalleryItemHTML(post: any): string {
 function renderGallery() {
   const galleryEl = document.getElementById('gallery');
   if (!galleryEl) return;
-  const visiblePosts = allPosts.filter((p: any) => !p.hidden);
+  
+  // Base visual layer (don't show strictly hidden items, and apply pending deletions)
+  let visiblePosts = allPosts.filter((p: any) => !p.hidden && !pendingDeletedStackIds.includes(p.id));
+
+  // Determine standard vs global-hidden separation
+  if (galleryConfig.mode === 'main') {
+    if (isEditMode && galleryConfig.isAdmin) {
+      // Edit mode: Standard first, ghosted at the end
+      const normal = visiblePosts.filter((p: any) => !p.is_hidden_from_global);
+      const ghosted = visiblePosts.filter((p: any) => p.is_hidden_from_global);
+      visiblePosts = [...normal, ...ghosted];
+    } else {
+      // Normal viewer: omit completely
+      visiblePosts = visiblePosts.filter((p: any) => !p.is_hidden_from_global);
+    }
+  }
 
   if (visiblePosts.length === 0) {
     galleryEl.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: rgba(255,255,255,0.3); padding: 4rem 0;">No posts yet.</p>';
@@ -237,6 +268,11 @@ function renderGallery() {
 function enterEditMode() {
   isEditMode = true;
   document.body.classList.add('is-editing');
+  
+  if (galleryConfig.mode === 'main' && galleryConfig.isAdmin) {
+    renderGallery(); // Re-render to inject global-hidden items into the DOM!
+  }
+  
   editBtn?.classList.add('hidden');
   editActions?.classList.remove('hidden');
   const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
@@ -255,6 +291,7 @@ function enterEditMode() {
 
 function exitEditMode() {
   isEditMode = false;
+  hiddenStatusChanged = false;
   document.body.classList.remove('is-editing');
   editBtn?.classList.remove('hidden');
   editActions?.classList.add('hidden');
@@ -285,14 +322,10 @@ function renderMiniGallery() {
       btn.addEventListener('click', (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
+        // Deferred Local Deletion!
         const idx = parseInt((e.currentTarget as HTMLElement).getAttribute('data-idx')!);
-        pendingMiniDeleteIdx = idx;
-        const delModal = document.getElementById('confirm-delete-modal');
-        if (delModal) {
-          delModal.querySelector('.modal-title')!.textContent = 'Delete Image';
-          delModal.querySelector('.modal-caption')!.textContent = 'Are you sure you want to remove this image from the stack?';
-        }
-        openModal(delModal);
+        currentMiniImages.splice(idx, 1);
+        renderMiniGallery(); // Re-render the grid instantly, wait for user to click Done to save R2
       });
     });
   }
@@ -356,8 +389,44 @@ function attachGalleryListeners() {
     btn.addEventListener('click', (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
-      pendingPostId = btn.getAttribute('data-id');
-      openModal(confirmDeleteModal);
+      const postId = btn.getAttribute('data-id');
+      if (postId) {
+        pendingDeletedStackIds.push(postId);
+        const wrapper = btn.closest('.gallery-item-wrapper');
+        if (wrapper) wrapper.remove(); // Visual erasure logic
+      }
+    });
+  });
+
+  // Hide/Unhide Buttons (Deferred API Update)
+  document.querySelectorAll('.hide-btn').forEach((btn: any) => {
+    btn.addEventListener('click', async (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const postId = btn.getAttribute('data-id');
+      const isCurrentlyHidden = btn.getAttribute('data-hidden') === 'true';
+      const wrapper = btn.closest('.gallery-item-wrapper');
+      const galleryEl = document.getElementById('gallery');
+      if (!postId || !wrapper || !galleryEl) return;
+
+      const newState = !isCurrentlyHidden;
+      hiddenStatusChanged = true;
+
+      // Update local memory immediately
+      const post = allPosts.find((p: any) => p.id === postId);
+      if (post) post.is_hidden_from_global = newState;
+      
+      // Visual toggle without reloading
+      btn.setAttribute('data-hidden', String(newState));
+      if (newState) {
+        btn.innerHTML = '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><line x1="12" y1="5" x2="12" y2="19"></line></svg>';
+        wrapper.classList.add('is-ghosted');
+        galleryEl.appendChild(wrapper); // Send dynamically to bottom!
+      } else {
+        btn.innerHTML = '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+        wrapper.classList.remove('is-ghosted');
+      }
     });
   });
 
@@ -365,7 +434,7 @@ function attachGalleryListeners() {
   document.querySelectorAll('.gallery-item-wrapper').forEach((wrapper: any) => {
     wrapper.addEventListener('click', (e: Event) => {
       if (document.body.classList.contains('is-editing')) {
-        if ((e.target as HTMLElement).closest('.delete-btn')) return;
+        if ((e.target as HTMLElement).closest('.delete-btn') || (e.target as HTMLElement).closest('.hide-btn')) return;
         e.preventDefault();
         e.stopPropagation();
         openMiniGallery(wrapper);
@@ -588,7 +657,7 @@ export function initGallery(config: GalleryConfig) {
   cancelBtn?.addEventListener('click', () => {
     const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
     const currentOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
-    if (currentOrder.join(',') !== initialOrder.join(',')) {
+    if (currentOrder.join(',') !== initialOrder.join(',') || pendingDeletedStackIds.length > 0) {
       pendingAction = 'DISCARD_EDITS';
       openModal(confirmDiscardModal);
     } else {
@@ -608,90 +677,89 @@ export function initGallery(config: GalleryConfig) {
 
   cancelDiscardBtn?.addEventListener('click', () => closeModal(confirmDiscardModal));
 
-  // --- Save Order ---
+  // --- Save Order / Execute Deletions ---
   saveBtn?.addEventListener('click', async () => {
     const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
     const newOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
-    if (newOrder.join(',') === initialOrder.join(',')) {
+    
+    if (newOrder.join(',') === initialOrder.join(',') && pendingDeletedStackIds.length === 0 && !hiddenStatusChanged) {
       exitEditMode();
       return;
     }
-    openModal(progressModal);
-    if (progressTitle) progressTitle.innerText = 'Saving Order...';
-    if (progressStatusText) progressStatusText.innerText = 'Updating...';
-    if (progressBarInner) progressBarInner.style.width = '30%';
+    
+    const executeSave = async () => {
+      openModal(progressModal);
+      if (progressTitle) progressTitle.innerText = 'Saving Changes...';
+      if (progressStatusText) progressStatusText.innerText = 'Updating...';
+      if (progressBarInner) progressBarInner.style.width = '30%';
 
-    try {
-      const orderedPosts = newOrder.map(id => allPosts.find((p: any) => p.id === id)).filter(Boolean);
-      const missingPosts = allPosts.filter((p: any) => !newOrder.includes(p.id));
-      const updatedPosts = [...orderedPosts, ...missingPosts];
-      await savePostsToR2(updatedPosts, config.saveScope);
-      allPosts = updatedPosts;
-      if (progressBarInner) progressBarInner.style.width = '100%';
-      if (progressStatusText) progressStatusText.innerText = 'Order saved!';
-      refreshPageBtn?.classList.add('active');
-    } catch (e: any) {
-      if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
+      try {
+        // 1. Process batch API deletes first
+        if (pendingDeletedStackIds.length > 0) {
+          if (progressStatusText) progressStatusText.innerText = 'Deleting posts...';
+          await Promise.all(
+            pendingDeletedStackIds.map(id => fetch(`/api/stacks/${id}`, { method: 'DELETE' }))
+          );
+          allPosts = allPosts.filter((p: any) => !pendingDeletedStackIds.includes(p.id));
+          pendingDeletedStackIds = [];
+        }
+
+        // 2. Process order (Implicitly sends memory is_hidden_from_global attributes to API)
+        if (progressStatusText) progressStatusText.innerText = 'Linking arrangement...';
+        const orderedPosts = newOrder.map(id => allPosts.find((p: any) => p.id === id)).filter(Boolean);
+        const missingPosts = allPosts.filter((p: any) => !newOrder.includes(p.id));
+        const updatedPosts = [...orderedPosts, ...missingPosts];
+        await savePostsToR2(updatedPosts, config.saveScope);
+        allPosts = updatedPosts;
+        hiddenStatusChanged = false;
+        if (progressBarInner) progressBarInner.style.width = '100%';
+        if (progressStatusText) progressStatusText.innerText = 'Order saved!';
+        refreshPageBtn?.classList.add('active');
+      } catch (e: any) {
+        if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
+      }
+      exitEditMode();
+    };
+
+    if (pendingDeletedStackIds.length > 0) {
+      const thumbContainer = document.getElementById('delete-thumbnails-container');
+      if (thumbContainer) {
+        thumbContainer.innerHTML = pendingDeletedStackIds.map(id => {
+          const post = allPosts.find((p: any) => p.id === id);
+          if (post && post.images && post.images.length > 0) {
+            return `<img src="${post.images[0]}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />`;
+          }
+          return '';
+        }).join('');
+      }
+
+      if (confirmDeleteModal) {
+        confirmDeleteModal.querySelector('.modal-title')!.textContent = 'Confirm Delete Options';
+        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to delete ${pendingDeletedStackIds.length} stack(s).<br>This action cannot be undone.`;
+        openModal(confirmDeleteModal);
+      }
+
+      const btn = document.getElementById('confirm-delete-btn');
+      if (btn) {
+        const newBtn = btn.cloneNode(true) as HTMLElement;
+        btn.parentNode!.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', () => {
+          closeModal(confirmDeleteModal);
+          executeSave();
+        });
+      }
+    } else {
+      executeSave();
     }
-    exitEditMode();
   });
 
-  // --- Delete Post ---
+  // --- Delete Post (Code Cleaned due to Deferred Deletion) ---
   const origConfirmDeleteBtn = document.getElementById('confirm-delete-btn');
   if (origConfirmDeleteBtn) {
     const newConfirmDeleteBtn = origConfirmDeleteBtn.cloneNode(true) as HTMLElement;
     origConfirmDeleteBtn.parentNode!.replaceChild(newConfirmDeleteBtn, origConfirmDeleteBtn);
-
-    newConfirmDeleteBtn.addEventListener('click', async () => {
+    newConfirmDeleteBtn.addEventListener('click', () => { 
       closeModal(confirmDeleteModal);
-      if (pendingMiniDeleteIdx !== null) {
-        const idx = pendingMiniDeleteIdx;
-        pendingMiniDeleteIdx = null;
-        currentMiniImages.splice(idx, 1);
-        renderMiniGallery();
-
-        if (currentEditingWrapper) {
-          const postId = currentEditingWrapper.getAttribute('data-id');
-          openModal(progressModal);
-          if (progressTitle) progressTitle.innerText = 'Removing Image...';
-          if (progressStatusText) progressStatusText.innerText = 'Updating...';
-          if (progressBarInner) progressBarInner.style.width = '40%';
-          try {
-            closeModal(miniGalleryModal);
-            const updatedPost = allPosts.find((p: any) => p.id === postId);
-            if (updatedPost) {
-              updatedPost.images = [...currentMiniImages];
-              await savePostsToR2(allPosts, config.saveScope);
-            }
-            renderGallery();
-            if (progressBarInner) progressBarInner.style.width = '100%';
-            if (progressStatusText) progressStatusText.innerText = 'Image removed!';
-            refreshPageBtn?.classList.add('active');
-          } catch (e: any) {
-            if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
-          }
-        }
-      } else if (pendingPostId) {
-        openModal(progressModal);
-        if (progressTitle) progressTitle.innerText = 'Deleting Post...';
-        if (progressStatusText) progressStatusText.innerText = 'Removing...';
-        if (progressBarInner) progressBarInner.style.width = '30%';
-        try {
-          const delRes = await fetch(`/api/stacks/${pendingPostId}`, { method: 'DELETE' });
-          if (!delRes.ok) {
-            const errData = await delRes.json();
-            throw new Error(errData.error || 'Failed to delete');
-          }
-          allPosts = allPosts.filter((p: any) => p.id !== pendingPostId);
-          renderGallery();
-          if (progressBarInner) progressBarInner.style.width = '100%';
-          if (progressStatusText) progressStatusText.innerText = 'Post deleted!';
-          refreshPageBtn?.classList.add('active');
-        } catch (e: any) {
-          if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
-        }
-        pendingPostId = null;
-      }
     });
   }
 
@@ -700,13 +768,7 @@ export function initGallery(config: GalleryConfig) {
     const newCancelDeleteBtn = origCancelDeleteBtn.cloneNode(true) as HTMLElement;
     origCancelDeleteBtn.parentNode!.replaceChild(newCancelDeleteBtn, origCancelDeleteBtn);
     newCancelDeleteBtn.addEventListener('click', () => {
-      pendingMiniDeleteIdx = null;
-      pendingPostId = null;
       closeModal(confirmDeleteModal);
-      if (confirmDeleteModal) {
-        confirmDeleteModal.querySelector('.modal-title')!.textContent = 'Delete Stack';
-        confirmDeleteModal.querySelector('.modal-caption')!.textContent = 'Are you sure you want to delete this stack? This action cannot be undone.';
-      }
     });
   }
 
@@ -794,42 +856,74 @@ export function initGallery(config: GalleryConfig) {
       if (src.startsWith('data:')) newDataUrls.push({ idx, dataUrl: src });
     });
 
-    closeModal(miniGalleryModal);
-    openModal(progressModal);
-    if (progressTitle) progressTitle.innerText = 'Updating Stack...';
-    if (progressStatusText) progressStatusText.innerText = 'Uploading new images...';
-    if (progressBarInner) progressBarInner.style.width = '10%';
+    const executeSave = async () => {
+      closeModal(miniGalleryModal);
+      openModal(progressModal);
+      if (progressTitle) progressTitle.innerText = 'Updating Stack...';
+      if (progressStatusText) progressStatusText.innerText = 'Uploading new images...';
+      if (progressBarInner) progressBarInner.style.width = '10%';
 
-    try {
-      const timestamp = Date.now();
-      for (let i = 0; i < newDataUrls.length; i++) {
-        const { idx, dataUrl } = newDataUrls[i];
-        if (progressStatusText) progressStatusText.innerText = `Uploading image ${i + 1}/${newDataUrls.length}...`;
-        if (progressBarInner) progressBarInner.style.width = `${10 + ((i + 1) / newDataUrls.length) * 50}%`;
+      try {
+        const timestamp = Date.now();
+        for (let i = 0; i < newDataUrls.length; i++) {
+          const { idx, dataUrl } = newDataUrls[i];
+          if (progressStatusText) progressStatusText.innerText = `Uploading image ${i + 1}/${newDataUrls.length}...`;
+          if (progressBarInner) progressBarInner.style.width = `${10 + ((i + 1) / newDataUrls.length) * 50}%`;
 
-        const blob = dataUrlToBlob(dataUrl);
-        const fileName = `p_${postId}_add_${timestamp}_${i}.jpg`;
-        const finalUrl = await uploadToR2(blob, fileName);
-        currentMiniImages[idx] = finalUrl;
+          const blob = dataUrlToBlob(dataUrl);
+          const fileName = `p_${postId}_add_${timestamp}_${i}.jpg`;
+          const finalUrl = await uploadToR2(blob, fileName);
+          currentMiniImages[idx] = finalUrl;
+        }
+
+        if (progressStatusText) progressStatusText.innerText = 'Saving...';
+        if (progressBarInner) progressBarInner.style.width = '80%';
+
+        const updatedPost = allPosts.find((p: any) => p.id === postId);
+        if (updatedPost) {
+          updatedPost.images = [...currentMiniImages];
+          updatedPost.caption = newCaption;
+          updatedPost.author = newAuthor;
+        }
+        await savePostsToR2(allPosts, config.saveScope);
+        renderGallery();
+
+        if (progressBarInner) progressBarInner.style.width = '100%';
+        if (progressStatusText) progressStatusText.innerText = 'Stack updated!';
+        refreshPageBtn?.classList.add('active');
+      } catch (e: any) {
+        if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
+      }
+    };
+
+    const originalArr = JSON.parse(originalMiniImages);
+    const deletedImages = originalArr.filter((img: string) => !currentMiniImages.includes(img));
+
+    if (deletedImages.length > 0) {
+      const thumbContainer = document.getElementById('delete-thumbnails-container');
+      if (thumbContainer) {
+        thumbContainer.innerHTML = deletedImages.map((src: string) => {
+          return `<img src="${src}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />`;
+        }).join('');
       }
 
-      if (progressStatusText) progressStatusText.innerText = 'Saving...';
-      if (progressBarInner) progressBarInner.style.width = '80%';
-
-      const updatedPost = allPosts.find((p: any) => p.id === postId);
-      if (updatedPost) {
-        updatedPost.images = [...currentMiniImages];
-        updatedPost.caption = newCaption;
-        updatedPost.author = newAuthor;
+      if (confirmDeleteModal) {
+        confirmDeleteModal.querySelector('.modal-title')!.textContent = 'Confirm Delete Actions';
+        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to remove ${deletedImages.length} image(s) from this stack.<br>This cannot be undone.`;
+        openModal(confirmDeleteModal);
       }
-      await savePostsToR2(allPosts, config.saveScope);
-      renderGallery();
 
-      if (progressBarInner) progressBarInner.style.width = '100%';
-      if (progressStatusText) progressStatusText.innerText = 'Stack updated!';
-      refreshPageBtn?.classList.add('active');
-    } catch (e: any) {
-      if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
+      const btn = document.getElementById('confirm-delete-btn');
+      if (btn) {
+        const newBtn = btn.cloneNode(true) as HTMLElement;
+        btn.parentNode!.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', () => {
+          closeModal(confirmDeleteModal);
+          executeSave();
+        });
+      }
+    } else {
+      executeSave();
     }
   });
 

@@ -41,3 +41,40 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 };
+
+export const PATCH: APIRoute = async ({ params, request, locals }) => {
+  const auth = locals.auth();
+  if (!auth?.userId) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  }
+
+  const stackId = params.id;
+  if (!stackId) {
+    return new Response(JSON.stringify({ error: 'Stack ID required' }), { status: 400 });
+  }
+
+  try {
+    const adminFlag = await isAdmin(auth.userId);
+    if (!adminFlag) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
+    }
+
+    const { isHiddenFromGlobal } = await request.json();
+
+    const result = await sql`
+      UPDATE stacks 
+      SET is_hidden_from_global = ${isHiddenFromGlobal} 
+      WHERE id = ${stackId} 
+      RETURNING id
+    `;
+
+    if (result.length === 0) {
+      return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
+    }
+
+    return new Response(JSON.stringify({ success: true }));
+  } catch (err: any) {
+    console.error('Patch API error:', err);
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+};

@@ -86,7 +86,7 @@ const { isAuthenticated, showEditControls, showInviteModal = false, showClerkMod
 <div class="modal-overlay" id="confirm-discard-modal" style="z-index: 2000;">
   <div class="modal-content">
     <h3 class="modal-title">Discard Changes</h3>
-    <p class="modal-caption" style="margin-bottom: 2rem;">All unsaved changes will be discarded. Are you sure you want to cancel?</p>
+    <p class="modal-caption" style="margin-bottom: 2rem;">All unsaved changes will be discarded.<br>Are you sure you want to cancel?</p>
     <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 2rem;">
       <button class="action-btn" id="cancel-discard-btn">No</button>
       <button class="action-btn confirm" id="confirm-discard-btn" style="color: #e11d48;">Yes, Discard</button>
@@ -98,8 +98,9 @@ const { isAuthenticated, showEditControls, showInviteModal = false, showClerkMod
 <div class="modal-overlay" id="confirm-delete-modal" style="z-index: 2000;">
   <div class="modal-content">
     <h3 class="modal-title">Delete Stack</h3>
-    <p class="modal-caption" style="margin-bottom: 2rem;">Are you sure you want to delete this stack?<br>This action cannot be undone.</p>
-    <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 2rem;">
+    <p class="modal-caption" style="margin-bottom: 1.5rem;">Are you sure you want to delete this stack?<br>This action cannot be undone.</p>
+    <div id="delete-thumbnails-container" style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 2rem; flex-wrap: wrap; max-height: 200px; overflow-y: auto;"></div>
+    <div class="modal-actions" style="justify-content: center; gap: 2rem; margin-top: 1rem;">
       <button class="action-btn" id="cancel-delete-btn">Cancel</button>
       <button class="action-btn confirm" id="confirm-delete-btn" style="color: #e11d48;">Delete</button>
     </div>

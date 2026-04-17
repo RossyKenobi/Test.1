@@ -11,12 +11,19 @@ export const GET: APIRoute = async ({ url }) => {
 
     const orderColumn = sortMode === 'personal' ? 'personal_sort_order' : 'sort_order';
 
+    // Safe schema guard for the new feature
+    try {
+      await sql`ALTER TABLE stacks ADD COLUMN IF NOT EXISTS is_hidden_from_global BOOLEAN DEFAULT FALSE`;
+    } catch(e) {
+      console.warn('Failed to conditionally add column', e);
+    }
+
     let rows;
     if (ownerFilter) {
       rows = await sql`
         SELECT
           s.id, s.caption, s.author, s.category,
-          s.is_portrait, s.hidden, s.sort_order, s.personal_sort_order, s.owner_clerk_id,
+          s.is_portrait, s.hidden, s.is_hidden_from_global, s.sort_order, s.personal_sort_order, s.owner_clerk_id,
           p.image_url AS photo_url, p.sort_order AS photo_sort_order
         FROM stacks s
         LEFT JOIN photos p ON p.stack_id = s.id
@@ -27,7 +34,7 @@ export const GET: APIRoute = async ({ url }) => {
       rows = await sql`
         SELECT
           s.id, s.caption, s.author, s.category,
-          s.is_portrait, s.hidden, s.sort_order, s.personal_sort_order, s.owner_clerk_id,
+          s.is_portrait, s.hidden, s.is_hidden_from_global, s.sort_order, s.personal_sort_order, s.owner_clerk_id,
           p.image_url AS photo_url, p.sort_order AS photo_sort_order
         FROM stacks s
         LEFT JOIN photos p ON p.stack_id = s.id
@@ -45,6 +52,7 @@ export const GET: APIRoute = async ({ url }) => {
           category: row.category || '',
           isPortrait: row.is_portrait,
           hidden: row.hidden,
+          is_hidden_from_global: row.is_hidden_from_global || false,
           images: [],
           owner_clerk_id: row.owner_clerk_id,
           sort_order: row.sort_order,
@@ -95,8 +103,15 @@ export const PUT: APIRoute = async ({ locals, request, url }) => {
             WHERE id = ${post.id} AND owner_clerk_id = ${auth.userId}
           `;
         } else if (adminFlag) {
-          // Admin global sort: update sort_order
-          await sql`UPDATE stacks SET sort_order = ${i}, caption = ${post.caption || ''}, author = ${post.author || ''} WHERE id = ${post.id}`;
+          // Admin global sort: update sort_order AND is_hidden_from_global
+          await sql`
+            UPDATE stacks 
+            SET sort_order = ${i}, 
+                is_hidden_from_global = ${post.is_hidden_from_global || false}, 
+                caption = ${post.caption || ''}, 
+                author = ${post.author || ''} 
+            WHERE id = ${post.id}
+          `;
         } else {
           // Non-admin on main page: only update metadata of own stacks
           await sql`UPDATE stacks SET caption = ${post.caption || ''}, author = ${post.author || ''} WHERE id = ${post.id} AND owner_clerk_id = ${auth.userId}`;

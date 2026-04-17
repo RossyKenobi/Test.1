@@ -319,9 +319,10 @@ header {
 
 .gallery-item img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   object-fit: cover;
+  object-position: center;
   transition: opacity 0.3s ease;
 }
 
@@ -376,6 +377,54 @@ header {
   pointer-events: none; /* Block clicks when not in edit mode */
 }
 
+/* Hide Button (Admin specific) */
+.hide-btn {
+  position: absolute;
+  top: 12px;
+  left: 54px; /* Placed directly right of the delete button (12 + 34 + 8) */
+  background: rgba(100, 100, 100, 0.85); /* distinct from delete red */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.2s ease, background 0.3s ease;
+  z-index: 10;
+  border: none;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.hide-btn:hover {
+  transform: scale(1.1);
+  background: rgba(140, 140, 140, 0.95);
+}
+
+.hide-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: white;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Ghosted State (Globally Hidden but seen by Admin in Edit Mode) */
+.gallery-item-wrapper.is-ghosted .gallery-item {
+  opacity: 0.35;
+  filter: grayscale(80%);
+}
+
+/* Hide ghosted items completely when not editing */
+body:not(.is-editing) .gallery-item-wrapper.is-ghosted {
+  display: none !important;
+}
+
 /* Project a full-canvas static dashed border from the unscaled wrapper */
 body.is-editing .gallery-item-wrapper::before {
   content: '';
@@ -388,10 +437,19 @@ body.is-editing .gallery-item-wrapper::before {
 }
 
 /* Dynamically shrink the inner photo container by eating inwards identically on all four sides */
-body.is-editing .gallery-item {
-  border: 14px solid transparent !important; /* Uniform inward pressure exactly 14px thick */
-  transform: none !important; /* Hard reset any hover transforms */
-}
+      body.is-editing .gallery-item {
+        border: 14px solid transparent !important; /* Uniform inward pressure exactly 14px thick */
+        transform: none !important; /* Hard reset any hover transforms */
+      }
+      
+      body.is-editing .delete-btn, body.is-editing .hide-btn {
+        pointer-events: auto !important; /* Re-enable clicks when editing */
+      }
+
+      body.is-editing .hide-btn {
+        display: flex !important;
+        opacity: 1 !important;
+      }
 
 body.is-editing .sortable-ghost .gallery-item {
   border-color: rgba(255, 255, 255, 0.8);
