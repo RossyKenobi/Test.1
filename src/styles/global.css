@@ -546,7 +546,20 @@ body.is-editing .sortable-ghost .gallery-item {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  overflow: hidden;
+  vertical-align: middle;
+  min-width: 140px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn .text {
+  display: block;
+  width: 100%;
+  pointer-events: none;
 }
 
 .action-btn:hover {
@@ -664,8 +677,11 @@ body.is-editing .sortable-ghost .gallery-item {
   display: flex;
   gap: 1.5rem; /* Desktop and iPad maintain large gaps */
 }
-.hidden {
-  display: none !important;
+.hidden { 
+  display: none !important; 
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 .modal-actions {

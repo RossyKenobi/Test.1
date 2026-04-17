@@ -10,9 +10,11 @@ interface Props {
   showInviteModal?: boolean;
   showClerkModals?: boolean;
   showChangeBgBtn?: boolean;
+  showExpandBtn?: boolean;
+  alwaysShowBar?: boolean;
 }
 
-const { isAuthenticated, showEditControls, showInviteModal = false, showClerkModals = false, showChangeBgBtn = false } = Astro.props;
+const { isAuthenticated, showEditControls, showInviteModal = false, showClerkModals = false, showChangeBgBtn = false, showExpandBtn = false, alwaysShowBar = false } = Astro.props;
 ---
 
 <!-- Gallery Grid -->
@@ -23,10 +25,11 @@ const { isAuthenticated, showEditControls, showInviteModal = false, showClerkMod
 </main>
 
 <!-- Gallery Bottom Bar (Edit controls) -->
-<div class="gallery-bottom-bar" id="gallery-bottom-bar" style={(isAuthenticated && showEditControls) ? '' : 'display: none;'}>
+<div class="gallery-bottom-bar" id="gallery-bottom-bar" style={(isAuthenticated && showEditControls) || alwaysShowBar ? '' : 'display: none;'}>
   <div class="edit-controls">
-    {showChangeBgBtn && <button class="action-btn" id="change-bg-btn" style="margin-right: 1rem;">Change Background</button>}
-    <button class="action-btn" id="open-edit-mode">Edit</button>
+    {showChangeBgBtn && <button class="action-btn" id="change-bg-btn"><span class="text">Change Background</span></button>}
+    {showExpandBtn && <button class="action-btn" id="expand-gallery-btn"><span class="text">Expand</span></button>}
+    {(isAuthenticated && showEditControls) && <button class="action-btn" id="open-edit-mode"><span class="text">Edit</span></button>}
     <div id="edit-actions" class="hidden">
       <button class="action-btn" id="cancel-edits">Cancel</button>
       <button class="action-btn confirm" id="add-new-post">Import</button>

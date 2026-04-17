@@ -13,6 +13,8 @@ export interface GalleryConfig {
   canSort: boolean;           // whether drag-drop sorting is allowed
   postsApiUrl: string;        // e.g. '/api/posts' or '/api/posts?owner=xxx&sort=personal'
   saveScope?: string;         // 'personal' for personal page sort saves
+  isOwner?: boolean;          // whether the current user owns this personal page
+  initialExpanded?: boolean;  // initial expand state from DB
 }
 
 // ==========================================
@@ -30,7 +32,11 @@ let initialOrder: string[] = [];
 let filePickerActive = false;
 let pendingAction: string | null = null;
 let pendingDeletedStackIds: string[] = [];  // Batch stack deletes
+let pendingDeletedPhotoIds: string[] = [];  // Batch photo deletes (expanded mode)
 let hiddenStatusChanged = false; // Track dirty state for hidden toggle delaying
+let isExpanded = false;  // Expand/Collapse state
+let expandedPhotos: any[] = [];  // Flattened photo array for expanded mode
+let expandBtn: HTMLElement | null;
 let currentEditingWrapper: HTMLElement | null = null;
 let currentMiniImages: string[] = [];
 let originalMiniImages = '';
@@ -156,12 +162,24 @@ async function savePostsToR2(posts: any[], scope?: string) {
   if (!res.ok) throw new Error('Failed to save posts');
 }
 
+// --- Expanded Mode Rendering Helpers ---
+function getImageUrl(img: any): string {
+  if (!img) return '';
+  return typeof img === 'string' ? img : (img.url || '');
+}
+
+function getPhotoId(img: any): string {
+  if (!img || typeof img !== 'object') return '';
+  return img.photoId || '';
+}
+
 // --- Gallery Rendering ---
 function createGalleryItemHTML(post: any): string {
   const images = post.images || [];
-  const isCarousel = images.length > 1;
-  const thumbnail = images.length > 0 ? images[0] : '';
-  const imagesData = JSON.stringify(images).replace(/"/g, '&quot;');
+  const imageUrls = images.map(getImageUrl);
+  const isCarousel = imageUrls.length > 1;
+  const thumbnail = imageUrls.length > 0 ? imageUrls[0] : '';
+  const imagesData = JSON.stringify(imageUrls).replace(/"/g, '&quot;');
   const captionData = (post.caption || '').replace(/"/g, '&quot;');
   const authorData = (post.author || '').replace(/"/g, '&quot;');
 
@@ -212,6 +230,163 @@ function createGalleryItemHTML(post: any): string {
       </a>
     </div>
   `;
+}
+
+function buildExpandedPhotos(): any[] {
+  const photos: any[] = [];
+  for (const post of allPosts) {
+    if (post.hidden) continue;
+    const images = post.images || [];
+    for (const img of images) {
+      photos.push({
+        url: getImageUrl(img),
+        photoId: getPhotoId(img),
+        expandedSortOrder: typeof img === 'object' ? img.expandedSortOrder : null,
+        stackId: post.id,
+        caption: post.caption,
+        author: post.author,
+        owner_clerk_id: post.owner_clerk_id,
+      });
+    }
+  }
+  // Handle expandedSortOrder sorting
+  photos.sort((a, b) => {
+    const orderA = (a.expandedSortOrder !== null && a.expandedSortOrder !== undefined) ? a.expandedSortOrder : 999999;
+    const orderB = (b.expandedSortOrder !== null && b.expandedSortOrder !== undefined) ? b.expandedSortOrder : 999999;
+    
+    if (orderA !== orderB) return orderA - orderB;
+    // Fallback to natural order (appearance in allPosts) if both are unordered
+    return 0;
+  });
+  return photos;
+}
+
+function createExpandedItemHTML(photo: any): string {
+  let canEdit = false;
+  if (galleryConfig.userId) {
+    canEdit = galleryConfig.isAdmin || photo.owner_clerk_id === galleryConfig.userId;
+  }
+
+  const deleteBtnHTML = canEdit ? `
+    <button class="delete-btn" aria-label="Delete Photo" data-photo-id="${photo.photoId}" onclick="event.stopPropagation();">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
+      </svg>
+    </button>` : '';
+
+  return `
+    <div class="gallery-item-wrapper" data-photo-id="${photo.photoId}" data-stack-id="${photo.stackId}">
+      <a href="${photo.url}" class="gallery-item" data-pswp-src="${photo.url}">
+        <img src="${photo.url}" alt="${photo.caption || 'Photo'}" loading="lazy" decoding="async" />
+        ${deleteBtnHTML}
+      </a>
+    </div>
+  `;
+}
+
+function renderExpandedGallery() {
+  const galleryEl = document.getElementById('gallery');
+  if (!galleryEl) return;
+  expandedPhotos = buildExpandedPhotos().filter(p => !pendingDeletedPhotoIds.includes(p.photoId));
+
+  if (expandedPhotos.length === 0) {
+    galleryEl.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: rgba(255,255,255,0.3); padding: 4rem 0;">No photos yet.</p>';
+  } else {
+    galleryEl.innerHTML = expandedPhotos.map(createExpandedItemHTML).join('');
+  }
+
+  attachExpandedListeners();
+
+  // Auto-detect orientation per photo
+  galleryEl.querySelectorAll('.gallery-item-wrapper img').forEach((img: any) => {
+    const setOrientation = () => {
+      const wrapper = img.closest('.gallery-item-wrapper');
+      if (img.naturalHeight > img.naturalWidth) {
+        wrapper.classList.add('is-portrait');
+        wrapper.classList.remove('is-landscape');
+      } else {
+        wrapper.classList.add('is-landscape');
+        wrapper.classList.remove('is-portrait');
+      }
+    };
+    if (img.complete) setOrientation();
+    else img.addEventListener('load', setOrientation);
+  });
+}
+
+function attachExpandedListeners() {
+  // Delete buttons in expanded mode
+  document.querySelectorAll('.delete-btn[data-photo-id]').forEach((btn: any) => {
+    btn.addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const photoId = btn.getAttribute('data-photo-id');
+      if (photoId) {
+        pendingDeletedPhotoIds.push(photoId);
+        const wrapper = btn.closest('.gallery-item-wrapper');
+        if (wrapper) wrapper.remove();
+      }
+    });
+  });
+
+  // PhotoSwipe: single image only
+  document.querySelectorAll('.gallery-item-wrapper').forEach((wrapper: any) => {
+    wrapper.addEventListener('click', (e: Event) => {
+      if (document.body.classList.contains('is-editing')) {
+        if ((e.target as HTMLElement).closest('.delete-btn')) return;
+        return; // In edit mode, clicks on expanded items do nothing (just drag)
+      }
+      e.preventDefault();
+      if (document.body.classList.contains('is-swiping')) return;
+      const src = wrapper.querySelector('img')?.src;
+      if (!src) return;
+
+      const pswp = new PhotoSwipe({
+        dataSource: [{ src, width: 0, height: 0 }],
+        paddingFn: (_viewportSize: any) => {
+          const pad = window.innerWidth > 768 ? window.innerWidth * 0.22 : 20;
+          return { top: 40, bottom: 80, left: pad, right: pad };
+        }
+      });
+      pswp.on('gettingData', (ev: any) => {
+        const item = ev.data;
+        if (item.width > 0) return;
+        const img = new Image();
+        img.onload = () => {
+          item.width = img.naturalWidth; item.height = img.naturalHeight;
+          pswp.refreshSlideContent(ev.index); pswp.updateSize(true);
+        };
+        img.src = item.src;
+      });
+      pswp.init();
+    });
+  });
+}
+
+function expandGallery() {
+  isExpanded = true;
+  updateExpandBtn();
+  renderExpandedGallery();
+}
+
+function collapseGallery() {
+  isExpanded = false;
+  pendingDeletedPhotoIds = [];
+  updateExpandBtn();
+  renderGallery();
+}
+
+function updateExpandBtn() {
+  if (!expandBtn) return;
+  const newText = isExpanded ? 'COLLAPSE' : 'EXPAND';
+  const textSpan = expandBtn.querySelector('.text');
+  if (textSpan) {
+    textSpan.textContent = newText;
+  } else {
+    expandBtn.textContent = newText;
+  }
 }
 
 function renderGallery() {
@@ -274,9 +449,10 @@ function enterEditMode() {
   }
   
   editBtn?.classList.add('hidden');
+  if (expandBtn) expandBtn.classList.add('hidden');
   editActions?.classList.remove('hidden');
   const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
-  initialOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
+  initialOrder = orderNodes.map(node => (isExpanded ? node.getAttribute('data-photo-id') : node.getAttribute('data-id')) || '');
   const el = document.getElementById('gallery');
 
   if (galleryConfig.canSort && el) {
@@ -291,10 +467,19 @@ function enterEditMode() {
 
 function exitEditMode() {
   isEditMode = false;
-  hiddenStatusChanged = false;
   document.body.classList.remove('is-editing');
-  editBtn?.classList.remove('hidden');
+  
+  const editControls = document.querySelector('.edit-controls');
+  const editActions = document.getElementById('edit-actions');
+  const openEditBtn = document.getElementById('open-edit-mode');
+  const expandBtn = document.getElementById('expand-gallery-btn');
+  const changeBgBtn = document.getElementById('change-bg-btn');
+
   editActions?.classList.add('hidden');
+  openEditBtn?.classList.remove('hidden');
+  if (expandBtn) expandBtn.classList.remove('hidden');
+  if (changeBgBtn) changeBgBtn.classList.remove('hidden');
+
   if (sortableInstance) sortableInstance.destroy();
   setTimeout(() => { if (typeof (window as any).resizeAllGridItems === 'function') (window as any).resizeAllGridItems(); }, 50);
 }
@@ -599,8 +784,13 @@ async function loadGallery() {
   try {
     const res = await fetch(`${galleryConfig.postsApiUrl}${galleryConfig.postsApiUrl.includes('?') ? '&' : '?'}t=${Date.now()}`);
     if (!res.ok) throw new Error('Failed to load gallery data');
-    allPosts = await res.json();
-    renderGallery();
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      allPosts = data;
+      renderGallery();
+    } else {
+      throw new Error('Gallery data is not an array');
+    }
   } catch (e) {
     console.error('Gallery load error:', e);
     const galleryEl = document.getElementById('gallery');
@@ -651,13 +841,34 @@ export function initGallery(config: GalleryConfig) {
     galleryBottomBar.style.display = 'flex';
   }
 
+  // --- Expand Button ---
+  expandBtn = document.getElementById('expand-gallery-btn');
+  if (expandBtn) {
+    expandBtn.addEventListener('click', () => {
+      if (isEditMode) return; // Don't toggle while editing
+      if (isExpanded) {
+        collapseGallery();
+      } else {
+        expandGallery();
+      }
+      // Persist preference if owner
+      if (config.isOwner) {
+        fetch('/api/user/expanded', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expanded: isExpanded })
+        }).catch(err => console.error('Failed to save expand pref:', err));
+      }
+    });
+  }
+
   // --- Edit Mode Events ---
   editBtn?.addEventListener('click', () => { if (!isEditMode) enterEditMode(); });
 
   cancelBtn?.addEventListener('click', () => {
     const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
-    const currentOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
-    if (currentOrder.join(',') !== initialOrder.join(',') || pendingDeletedStackIds.length > 0) {
+    const currentOrder = orderNodes.map(node => (isExpanded ? node.getAttribute('data-photo-id') : node.getAttribute('data-id')) || '');
+    if (currentOrder.join(',') !== initialOrder.join(',') || pendingDeletedStackIds.length > 0 || pendingDeletedPhotoIds.length > 0) {
       pendingAction = 'DISCARD_EDITS';
       openModal(confirmDiscardModal);
     } else {
@@ -680,9 +891,9 @@ export function initGallery(config: GalleryConfig) {
   // --- Save Order / Execute Deletions ---
   saveBtn?.addEventListener('click', async () => {
     const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
-    const newOrder = orderNodes.map(node => node.getAttribute('data-id') || '');
+    const newOrder = orderNodes.map(node => (isExpanded ? node.getAttribute('data-photo-id') : node.getAttribute('data-id')) || '');
     
-    if (newOrder.join(',') === initialOrder.join(',') && pendingDeletedStackIds.length === 0 && !hiddenStatusChanged) {
+    if (newOrder.join(',') === initialOrder.join(',') && pendingDeletedStackIds.length === 0 && pendingDeletedPhotoIds.length === 0 && !hiddenStatusChanged) {
       exitEditMode();
       return;
     }
@@ -694,7 +905,27 @@ export function initGallery(config: GalleryConfig) {
       if (progressBarInner) progressBarInner.style.width = '30%';
 
       try {
-        // 1. Process batch API deletes first
+        // 0. Process batch photo deletes (expanded mode)
+        if (pendingDeletedPhotoIds.length > 0) {
+          if (progressStatusText) progressStatusText.innerText = 'Deleting photos...';
+          await Promise.all(
+            pendingDeletedPhotoIds.map(id => fetch(`/api/photos/${id}`, { method: 'DELETE' }))
+          );
+          // Remove deleted photos from allPosts images arrays
+          for (const post of allPosts) {
+            if (post.images) {
+              post.images = post.images.filter((img: any) => {
+                const pid = typeof img === 'object' ? img.photoId : '';
+                return !pendingDeletedPhotoIds.includes(pid);
+              });
+            }
+          }
+          // Remove stacks that have no photos left
+          allPosts = allPosts.filter((p: any) => p.images && p.images.length > 0);
+          pendingDeletedPhotoIds = [];
+        }
+
+        // 1. Process batch API stack deletes
         if (pendingDeletedStackIds.length > 0) {
           if (progressStatusText) progressStatusText.innerText = 'Deleting posts...';
           await Promise.all(
@@ -704,21 +935,59 @@ export function initGallery(config: GalleryConfig) {
           pendingDeletedStackIds = [];
         }
 
-        // 2. Process order (Implicitly sends memory is_hidden_from_global attributes to API)
+        // 2. Process order
         if (progressStatusText) progressStatusText.innerText = 'Linking arrangement...';
-        const orderedPosts = newOrder.map(id => allPosts.find((p: any) => p.id === id)).filter(Boolean);
-        const missingPosts = allPosts.filter((p: any) => !newOrder.includes(p.id));
-        const updatedPosts = [...orderedPosts, ...missingPosts];
-        await savePostsToR2(updatedPosts, config.saveScope);
-        allPosts = updatedPosts;
+        if (isExpanded) {
+          // Save expanded photo order
+          const photoNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper[data-photo-id]'));
+          const expandedOrder = photoNodes.map((node, i) => ({
+            photoId: node.getAttribute('data-photo-id'),
+            order: i,
+          })).filter(item => item.photoId);
+          if (expandedOrder.length > 0) {
+            await fetch(POSTS_API + '?scope=expanded', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(expandedOrder),
+            });
+            
+            // Critical: Update local memory so toggling modes doesn't reset order
+            // Use a Map for O(1) matching efficiency and reliability
+            const orderMap = new Map(expandedOrder.map(item => [item.photoId, item.order]));
+            
+            for (const post of allPosts) {
+              if (post.images) {
+                for (const img of post.images) {
+                  const pid = typeof img === 'object' ? img.photoId : '';
+                  if (pid && orderMap.has(pid)) {
+                    (img as any).expandedSortOrder = orderMap.get(pid);
+                  }
+                }
+              }
+            }
+          }
+          exitEditMode();
+          renderExpandedGallery();
+        } else {
+          // Save stack order
+          const orderedPosts = newOrder.map(id => allPosts.find((p: any) => p.id === id)).filter(Boolean);
+          const missingPosts = allPosts.filter((p: any) => !newOrder.includes(p.id));
+          const updatedPosts = [...orderedPosts, ...missingPosts];
+          await savePostsToR2(updatedPosts, config.saveScope);
+          allPosts = updatedPosts;
+          exitEditMode();
+          renderGallery();
+        }
         hiddenStatusChanged = false;
         if (progressBarInner) progressBarInner.style.width = '100%';
         if (progressStatusText) progressStatusText.innerText = 'Order saved!';
         refreshPageBtn?.classList.add('active');
       } catch (e: any) {
         if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
+        // Re-render in case of error to restore state
+        if (isExpanded) renderExpandedGallery();
+        else renderGallery();
       }
-      exitEditMode();
     };
 
     if (pendingDeletedStackIds.length > 0) {
@@ -727,7 +996,8 @@ export function initGallery(config: GalleryConfig) {
         thumbContainer.innerHTML = pendingDeletedStackIds.map(id => {
           const post = allPosts.find((p: any) => p.id === id);
           if (post && post.images && post.images.length > 0) {
-            return `<img src="${post.images[0]}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />`;
+            const thumbUrl = getImageUrl(post.images[0]);
+            return `<img src="${thumbUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />`;
           }
           return '';
         }).join('');
@@ -902,8 +1172,9 @@ export function initGallery(config: GalleryConfig) {
     if (deletedImages.length > 0) {
       const thumbContainer = document.getElementById('delete-thumbnails-container');
       if (thumbContainer) {
-        thumbContainer.innerHTML = deletedImages.map((src: string) => {
-          return `<img src="${src}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />`;
+        thumbContainer.innerHTML = deletedImages.map((img: any) => {
+          const thumbUrl = getImageUrl(img);
+          return `<img src="${thumbUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />`;
         }).join('');
       }
 
@@ -932,5 +1203,10 @@ export function initGallery(config: GalleryConfig) {
   window.addEventListener('resize', (window as any).resizeAllGridItems);
 
   // --- Initial Load ---
-  loadGallery();
+  loadGallery().then(() => {
+    // Apply initial expand state after data loads
+    if (config.initialExpanded && config.mode === 'personal') {
+      expandGallery();
+    }
+  });
 }

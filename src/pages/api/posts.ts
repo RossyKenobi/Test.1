@@ -11,11 +11,13 @@ export const GET: APIRoute = async ({ url }) => {
 
     const orderColumn = sortMode === 'personal' ? 'personal_sort_order' : 'sort_order';
 
-    // Safe schema guard for the new feature
+    // Safe schema guards
     try {
       await sql`ALTER TABLE stacks ADD COLUMN IF NOT EXISTS is_hidden_from_global BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE photos ADD COLUMN IF NOT EXISTS expanded_sort_order INTEGER`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS gallery_expanded BOOLEAN DEFAULT FALSE`;
     } catch(e) {
-      console.warn('Failed to conditionally add column', e);
+      console.warn('Failed to conditionally add columns', e);
     }
 
     let rows;
@@ -24,7 +26,7 @@ export const GET: APIRoute = async ({ url }) => {
         SELECT
           s.id, s.caption, s.author, s.category,
           s.is_portrait, s.hidden, s.is_hidden_from_global, s.sort_order, s.personal_sort_order, s.owner_clerk_id,
-          p.image_url AS photo_url, p.sort_order AS photo_sort_order
+          p.id AS photo_id, p.image_url AS photo_url, p.sort_order AS photo_sort_order, p.expanded_sort_order
         FROM stacks s
         LEFT JOIN photos p ON p.stack_id = s.id
         WHERE s.owner_clerk_id = ${ownerFilter}
@@ -60,7 +62,15 @@ export const GET: APIRoute = async ({ url }) => {
         });
       }
       if (row.photo_url) {
-        stackMap.get(row.id).images.push(row.photo_url);
+        if (sortMode === 'personal' && ownerFilter) {
+          stackMap.get(row.id).images.push({
+            url: row.photo_url,
+            photoId: row.photo_id,
+            expandedSortOrder: row.expanded_sort_order,
+          });
+        } else {
+          stackMap.get(row.id).images.push(row.photo_url);
+        }
       }
     }
 
@@ -95,7 +105,10 @@ export const PUT: APIRoute = async ({ locals, request, url }) => {
       for (let i = 0; i < body.length; i++) {
         const post = body[i];
         
-        if (scope === 'personal') {
+        if (scope === 'expanded') {
+          // Handled after the main loop to keep it clean
+          break;
+        } else if (scope === 'personal') {
           // Personal sort: update personal_sort_order for own stacks only
           await sql`
             UPDATE stacks 
@@ -117,18 +130,38 @@ export const PUT: APIRoute = async ({ locals, request, url }) => {
           await sql`UPDATE stacks SET caption = ${post.caption || ''}, author = ${post.author || ''} WHERE id = ${post.id} AND owner_clerk_id = ${auth.userId}`;
         }
         
-        // Update photos if provided
-        if (post.images && post.images.length > 0) {
+        // Update photos if provided (skip for expanded scope)
+        if (scope !== 'expanded' && post.images && post.images.length > 0) {
           const canEdit = adminFlag || (await sql`SELECT id FROM stacks WHERE id = ${post.id} AND owner_clerk_id = ${auth.userId}`).length > 0;
           
           if (canEdit) {
             await sql`DELETE FROM photos WHERE stack_id = ${post.id}`;
             for (let j = 0; j < post.images.length; j++) {
-              await sql`INSERT INTO photos (stack_id, image_url, sort_order, created_at) VALUES (${post.id}, ${post.images[j]}, ${j}, NOW())`;
+              const imgUrl = typeof post.images[j] === 'string' ? post.images[j] : post.images[j].url;
+              await sql`INSERT INTO photos (stack_id, image_url, sort_order, created_at) VALUES (${post.id}, ${imgUrl}, ${j}, NOW())`;
             }
           }
         }
       }
+      // Handle expanded scope: body is [{photoId, order}, ...]
+      if (scope === 'expanded' && Array.isArray(body)) {
+        const adminFlag = await isAdmin(auth.userId);
+        for (const item of body) {
+          if (item.photoId && item.order !== undefined) {
+            // Update photo order. If admin, allow all. If not, only for own stacks.
+            if (adminFlag) {
+              await sql`UPDATE photos SET expanded_sort_order = ${item.order} WHERE id = ${item.photoId}`;
+            } else {
+              await sql`
+                UPDATE photos SET expanded_sort_order = ${item.order}
+                WHERE id = ${item.photoId}
+                AND stack_id IN (SELECT id FROM stacks WHERE owner_clerk_id = ${auth.userId})
+              `;
+            }
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ success: true }));
     }
 

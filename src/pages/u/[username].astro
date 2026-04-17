@@ -97,6 +97,8 @@ const showOnboarding = !backgroundUrl && isOwner;
       showInviteModal={false} 
       showClerkModals={false} 
       showChangeBgBtn={isOwner}
+      showExpandBtn={true}
+      alwaysShowBar={true}
     />
 
     <section id="contact" class="contact-section">
@@ -254,6 +256,7 @@ const showOnboarding = !backgroundUrl && isOwner;
         isOwner: isOwner,
         ownerClerkId: pageOwner.clerk_id,
         showOnboarding: showOnboarding,
+        galleryExpanded: pageOwner.gallery_expanded || false,
       };
     </script>
     <script>
@@ -280,6 +283,8 @@ const showOnboarding = !backgroundUrl && isOwner;
         canSort: PROFILE.isOwner || AUTH.isAdmin,
         postsApiUrl: `/api/posts?owner=${PROFILE.ownerClerkId}&sort=personal`,
         saveScope: 'personal',
+        isOwner: PROFILE.isOwner || false,
+        initialExpanded: PROFILE.galleryExpanded || false,
       });
 
       // --- Onboarding Modal ---

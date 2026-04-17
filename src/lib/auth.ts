@@ -92,6 +92,12 @@ export async function isAdmin(clerkId: string): Promise<boolean> {
  * Look up a user by their username
  */
 export async function getUserByUsername(username: string) {
+  // Ensure schema is up to date
+  try {
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS gallery_expanded BOOLEAN DEFAULT FALSE`;
+    await sql`ALTER TABLE photos ADD COLUMN IF NOT EXISTS expanded_sort_order INTEGER`;
+  } catch(e) {}
+
   const rows = await sql`SELECT * FROM users WHERE username = ${username}`;
   return rows.length > 0 ? rows[0] : null;
 }
