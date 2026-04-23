@@ -95,6 +95,7 @@ try {
       showInviteModal={true} 
       showClerkModals={true} 
       showChangeBgBtn={isCurrentUserAdmin}
+      currentUsername={currentUsername}
     />
 
     <section id="contact" class="contact-section">
@@ -125,7 +126,7 @@ try {
           <p class="modal-caption" style="margin-top: 2rem; margin-bottom: 1.5rem;">Choose a background for the main page</p>
           <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1.5rem;">
             <label for="bg-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose File</label>
-            <span id="bg-file-name" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em;">No file chosen</span>
+            <span id="bg-file-name" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em;">No photos chosen.</span>
           </div>
           <div id="bg-preview-container" style="display: none; margin-bottom: 1.5rem;">
             <img id="bg-preview-img" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 16px;" />

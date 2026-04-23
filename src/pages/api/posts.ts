@@ -26,9 +26,11 @@ export const GET: APIRoute = async ({ url }) => {
         SELECT
           s.id, s.caption, s.author, s.category,
           s.is_portrait, s.hidden, s.is_hidden_from_global, s.sort_order, s.personal_sort_order, s.owner_clerk_id,
+          u.username AS owner_username,
           p.id AS photo_id, p.image_url AS photo_url, p.sort_order AS photo_sort_order, p.expanded_sort_order
         FROM stacks s
         LEFT JOIN photos p ON p.stack_id = s.id
+        LEFT JOIN users u ON s.owner_clerk_id = u.clerk_id
         WHERE s.owner_clerk_id = ${ownerFilter}
         ORDER BY s.sort_order ASC, p.sort_order ASC
       `;
@@ -37,9 +39,11 @@ export const GET: APIRoute = async ({ url }) => {
         SELECT
           s.id, s.caption, s.author, s.category,
           s.is_portrait, s.hidden, s.is_hidden_from_global, s.sort_order, s.personal_sort_order, s.owner_clerk_id,
+          u.username AS owner_username,
           p.image_url AS photo_url, p.sort_order AS photo_sort_order
         FROM stacks s
         LEFT JOIN photos p ON p.stack_id = s.id
+        LEFT JOIN users u ON s.owner_clerk_id = u.clerk_id
         ORDER BY s.sort_order ASC, p.sort_order ASC
       `;
     }
@@ -57,6 +61,7 @@ export const GET: APIRoute = async ({ url }) => {
           is_hidden_from_global: row.is_hidden_from_global || false,
           images: [],
           owner_clerk_id: row.owner_clerk_id,
+          owner_username: row.owner_username,
           sort_order: row.sort_order,
           personal_sort_order: row.personal_sort_order,
         });

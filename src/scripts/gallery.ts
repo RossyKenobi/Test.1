@@ -68,9 +68,10 @@ let closeMiniGalleryBtn: HTMLElement | null;
 let confirmMiniGalleryBtn: HTMLElement | null;
 let miniGalleryGrid: HTMLElement | null;
 let miniCaptionInput: HTMLTextAreaElement | null;
-let miniAuthorInput: HTMLInputElement | null;
+let miniAuthorDisplay: HTMLElement | null;
 let miniImportBtn: HTMLElement | null;
 let miniFileInput: HTMLInputElement | null;
+let pendingUploadFiles: { file: File, dataUrl: string }[] = [];
 
 // --- Modal Helpers ---
 function openModal(modal: HTMLElement | null) {
@@ -81,6 +82,44 @@ function closeModal(modal: HTMLElement | null) {
   if (modal) {
     modal.classList.remove('active');
     if (!document.querySelector('.modal-overlay.active')) document.body.style.overflow = '';
+  }
+}
+
+function renderLocalPreviewGrid() {
+  const localPreviewGrid = document.getElementById('local-preview-grid');
+  const fileNameDisplay = document.getElementById('file-name-display');
+  
+  if (!localPreviewGrid) return;
+  localPreviewGrid.innerHTML = '';
+  
+  if (pendingUploadFiles.length > 0) {
+    if (fileNameDisplay) fileNameDisplay.style.display = 'none';
+    localPreviewGrid.style.display = 'grid';
+    
+    pendingUploadFiles.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'mini-gallery-item';
+      div.innerHTML = `
+        <img src="${item.dataUrl}" alt="preview ${idx}" style="pointer-events: none;" />
+        <button class="mini-delete-btn" data-idx="${idx}">×</button>
+      `;
+      localPreviewGrid.appendChild(div);
+    });
+
+    localPreviewGrid.querySelectorAll('.mini-delete-btn').forEach((btn: any) => {
+      btn.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        const idx = parseInt((e.target as HTMLElement).getAttribute('data-idx') || '0');
+        pendingUploadFiles.splice(idx, 1);
+        renderLocalPreviewGrid();
+      });
+    });
+  } else {
+    if (fileNameDisplay) {
+      fileNameDisplay.textContent = 'No photos chosen.';
+      fileNameDisplay.style.display = '';
+    }
+    localPreviewGrid.style.display = 'none';
   }
 }
 
@@ -182,6 +221,7 @@ function createGalleryItemHTML(post: any): string {
   const imagesData = JSON.stringify(imageUrls).replace(/"/g, '&quot;');
   const captionData = (post.caption || '').replace(/"/g, '&quot;');
   const authorData = (post.author || '').replace(/"/g, '&quot;');
+  const ownerUsernameData = (post.owner_username || '').replace(/"/g, '&quot;');
 
   const orientationClass = post.isPortrait === true ? 'is-portrait' : 'is-landscape';
 
@@ -214,7 +254,7 @@ function createGalleryItemHTML(post: any): string {
         </button>` : '';
 
   return `
-    <div class="gallery-item-wrapper ${orientationClass} ${hideClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-needs-check="${post.isPortrait === undefined}">
+    <div class="gallery-item-wrapper ${orientationClass} ${hideClass}" data-id="${post.id}" data-images="${imagesData}" data-caption="${captionData}" data-author="${authorData}" data-owner-username="${ownerUsernameData}" data-needs-check="${post.isPortrait === undefined}">
       <a href="${thumbnail}" class="gallery-item" data-pswp-src="${thumbnail}">
         <img src="${thumbnail}" alt="${post.caption || 'Gallery Post'}" loading="lazy" decoding="async" />
         ${deleteBtnHTML}
@@ -245,6 +285,7 @@ function buildExpandedPhotos(): any[] {
         stackId: post.id,
         caption: post.caption,
         author: post.author,
+        owner_username: post.owner_username,
         owner_clerk_id: post.owner_clerk_id,
       });
     }
@@ -277,7 +318,7 @@ function createExpandedItemHTML(photo: any): string {
     </button>` : '';
 
   return `
-    <div class="gallery-item-wrapper" data-photo-id="${photo.photoId}" data-stack-id="${photo.stackId}">
+    <div class="gallery-item-wrapper" data-photo-id="${photo.photoId}" data-stack-id="${photo.stackId}" data-owner-username="${(photo.owner_username || '').replace(/"/g, '&quot;')}" data-author="${(photo.author || '').replace(/"/g, '&quot;')}">
       <a href="${photo.url}" class="gallery-item" data-pswp-src="${photo.url}">
         <img src="${photo.url}" alt="${photo.caption || 'Photo'}" loading="lazy" decoding="async" />
         ${deleteBtnHTML}
@@ -450,6 +491,10 @@ function enterEditMode() {
   
   editBtn?.classList.add('hidden');
   if (expandBtn) expandBtn.classList.add('hidden');
+  const changeBgBtn = document.getElementById('change-bg-btn');
+  if (changeBgBtn) changeBgBtn.classList.add('hidden');
+  const createAlbumBtn = document.getElementById('add-new-post');
+  if (createAlbumBtn) createAlbumBtn.classList.add('hidden');
   editActions?.classList.remove('hidden');
   const orderNodes = Array.from(document.querySelectorAll('.gallery-item-wrapper'));
   initialOrder = orderNodes.map(node => (isExpanded ? node.getAttribute('data-photo-id') : node.getAttribute('data-id')) || '');
@@ -479,6 +524,8 @@ function exitEditMode() {
   openEditBtn?.classList.remove('hidden');
   if (expandBtn) expandBtn.classList.remove('hidden');
   if (changeBgBtn) changeBgBtn.classList.remove('hidden');
+  const createAlbumBtn = document.getElementById('add-new-post');
+  if (createAlbumBtn) createAlbumBtn.classList.remove('hidden');
 
   if (sortableInstance) sortableInstance.destroy();
   setTimeout(() => { if (typeof (window as any).resizeAllGridItems === 'function') (window as any).resizeAllGridItems(); }, 50);
@@ -499,10 +546,10 @@ function renderMiniGallery() {
       <img src="${src}" alt="img ${idx}" draggable="false" style="pointer-events: none;" />
       ${canEdit ? `<button class="mini-delete-btn" data-idx="${idx}">×</button>` : ''}
     `;
-    miniGalleryGrid.appendChild(div);
+    miniGalleryGrid?.appendChild(div);
   });
 
-  if (canEdit) {
+  if (canEdit && miniGalleryGrid) {
     miniGalleryGrid.querySelectorAll('.mini-delete-btn').forEach((btn: any) => {
       btn.addEventListener('click', (e: Event) => {
         e.preventDefault();
@@ -548,10 +595,9 @@ function openMiniGallery(wrapper: HTMLElement) {
     miniCaptionInput.readOnly = !canEdit;
   }
 
-  if (miniAuthorInput) {
-    miniAuthorInput.value = wrapper.getAttribute('data-author') || '';
-    originalMiniAuthor = miniAuthorInput.value;
-    miniAuthorInput.readOnly = !canEdit;
+  if (miniAuthorDisplay) {
+    miniAuthorDisplay.innerText = wrapper.getAttribute('data-author') || '';
+    originalMiniAuthor = wrapper.getAttribute('data-author') || '';
   }
 
   if (canEdit) {
@@ -670,9 +716,18 @@ function attachGalleryListeners() {
             onInit: (el: HTMLElement, pswpInstance: any) => {
               pswpInstance.on('change', () => {
                 const currentAuthor = wrapper.getAttribute('data-author');
+                const currentOwnerUsername = wrapper.getAttribute('data-owner-username');
                 let finalCaption = captionStr ? captionStr.replace(/\n/g, '<br>') : '';
-                if (currentAuthor && currentAuthor.trim() !== '') {
-                  finalCaption += `<br>BY <b>${currentAuthor.trim()}</b>`;
+                
+                const displayAuthor = (currentAuthor && currentAuthor.trim() !== '') ? currentAuthor.trim() : (currentOwnerUsername ? currentOwnerUsername.trim() : '');
+                
+                if (displayAuthor) {
+                  const upperAuthor = displayAuthor.toUpperCase();
+                  if (currentOwnerUsername && currentOwnerUsername.trim() !== '') {
+                    finalCaption += `<br>BY <a href="/u/${currentOwnerUsername.trim().toLowerCase()}" style="color: inherit; text-decoration: none;"><b>${upperAuthor}</b></a>`;
+                  } else {
+                    finalCaption += `<br>BY <b>${upperAuthor}</b>`;
+                  }
                 }
                 el.innerHTML = finalCaption;
               });
@@ -699,11 +754,10 @@ function attachGalleryListeners() {
 // --- New Local Upload (R2) ---
 async function handleLocalUpload() {
   if (!fileInput) return;
-  const files = Array.from(fileInput.files || []);
+  const files = pendingUploadFiles.map(p => p.file);
   const captionEl = document.getElementById('local-caption-input') as HTMLTextAreaElement;
-  const authorEl = document.getElementById('local-author-input') as HTMLInputElement;
   const caption = captionEl?.value || '';
-  const author = authorEl?.value || '';
+  const author = (window as any).__AUTH__?.username || '';
   if (files.length === 0) return;
 
   openModal(progressModal);
@@ -757,7 +811,7 @@ async function handleLocalUpload() {
     });
     if (!createRes.ok) {
       const errData = await createRes.json();
-      throw new Error(errData.error || 'Failed to create stack');
+      throw new Error(errData.error || 'Failed to create album');
     }
 
     allPosts.push(newPost);
@@ -767,9 +821,8 @@ async function handleLocalUpload() {
     if (progressStatusText) progressStatusText.innerText = 'Import complete!';
     refreshPageBtn?.classList.add('active');
 
-    fileInput.value = '';
-    const fileNameDisplay = document.getElementById('file-name-display');
-    if (fileNameDisplay) fileNameDisplay.textContent = 'No file chosen';
+    pendingUploadFiles = [];
+    renderLocalPreviewGrid();
   } catch (e: any) {
     if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
   }
@@ -831,7 +884,7 @@ export function initGallery(config: GalleryConfig) {
   confirmMiniGalleryBtn = document.getElementById('confirm-mini-gallery');
   miniGalleryGrid = document.getElementById('mini-gallery-grid');
   miniCaptionInput = document.getElementById('mini-caption-input') as HTMLTextAreaElement;
-  miniAuthorInput = document.getElementById('mini-author-input') as HTMLInputElement;
+  miniAuthorDisplay = document.getElementById('mini-author-display');
   miniImportBtn = document.getElementById('mini-import-btn');
   miniFileInput = document.getElementById('mini-file-input') as HTMLInputElement;
 
@@ -980,7 +1033,7 @@ export function initGallery(config: GalleryConfig) {
         }
         hiddenStatusChanged = false;
         if (progressBarInner) progressBarInner.style.width = '100%';
-        if (progressStatusText) progressStatusText.innerText = 'Order saved!';
+        if (progressStatusText) progressStatusText.innerText = 'Changes saved!';
         refreshPageBtn?.classList.add('active');
       } catch (e: any) {
         if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
@@ -1005,7 +1058,7 @@ export function initGallery(config: GalleryConfig) {
 
       if (confirmDeleteModal) {
         confirmDeleteModal.querySelector('.modal-title')!.textContent = 'Confirm Delete Options';
-        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to delete ${pendingDeletedStackIds.length} stack(s).<br>This action cannot be undone.`;
+        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to delete ${pendingDeletedStackIds.length} album(s).<br>This action cannot be undone.`;
         openModal(confirmDeleteModal);
       }
 
@@ -1046,13 +1099,22 @@ export function initGallery(config: GalleryConfig) {
   fileInput?.addEventListener('click', () => { filePickerActive = true; });
   fileInput?.addEventListener('change', () => {
     filePickerActive = false;
-    const fileNameDisplay = document.getElementById('file-name-display');
     if (fileInput!.files && fileInput!.files.length > 0) {
-      const count = fileInput!.files.length;
-      if (fileNameDisplay) fileNameDisplay.textContent = `${count} file${count > 1 ? 's' : ''} chosen`;
-    } else {
-      if (fileNameDisplay) fileNameDisplay.textContent = 'No file chosen';
+      const filesArray = Array.from(fileInput!.files);
+      let loadedCount = 0;
+      filesArray.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          pendingUploadFiles.push({ file, dataUrl: e.target!.result as string });
+          loadedCount++;
+          if (loadedCount === filesArray.length) {
+            renderLocalPreviewGrid();
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
+    if (fileInput) fileInput.value = '';
   });
   fileInput?.addEventListener('cancel', () => { filePickerActive = false; });
 
@@ -1061,7 +1123,12 @@ export function initGallery(config: GalleryConfig) {
     openModal(importModal);
   });
 
-  document.getElementById('close-import-modal')?.addEventListener('click', () => closeModal(importModal));
+  document.getElementById('close-import-modal')?.addEventListener('click', () => {
+    pendingUploadFiles = [];
+    renderLocalPreviewGrid();
+    if (fileInput) fileInput.value = '';
+    closeModal(importModal);
+  });
   refreshPageBtn?.addEventListener('click', () => window.location.reload());
 
   document.getElementById('confirm-import')?.addEventListener('click', () => {
@@ -1092,8 +1159,7 @@ export function initGallery(config: GalleryConfig) {
 
   closeMiniGalleryBtn?.addEventListener('click', () => {
     const hasChanges = JSON.stringify(currentMiniImages) !== originalMiniImages ||
-                      (miniCaptionInput?.value || '') !== originalMiniCaption ||
-                      (miniAuthorInput?.value || '') !== originalMiniAuthor;
+                      (miniCaptionInput?.value || '') !== originalMiniCaption;
     if (hasChanges) {
       pendingAction = 'DISCARD_MINI_GALLERY';
       openModal(confirmDiscardModal);
@@ -1115,10 +1181,9 @@ export function initGallery(config: GalleryConfig) {
     }
 
     const newCaption = miniCaptionInput?.value || '';
-    const newAuthor = miniAuthorInput?.value || '';
+    const newAuthor = currentEditingWrapper?.getAttribute('data-author') || '';
     const hasChanges = JSON.stringify(currentMiniImages) !== originalMiniImages ||
-                      newCaption !== originalMiniCaption ||
-                      newAuthor !== originalMiniAuthor;
+                      newCaption !== originalMiniCaption;
     if (!hasChanges) { closeModal(miniGalleryModal); return; }
 
     const newDataUrls: {idx: number; dataUrl: string}[] = [];
@@ -1129,7 +1194,7 @@ export function initGallery(config: GalleryConfig) {
     const executeSave = async () => {
       closeModal(miniGalleryModal);
       openModal(progressModal);
-      if (progressTitle) progressTitle.innerText = 'Updating Stack...';
+      if (progressTitle) progressTitle.innerText = 'Updating Album...';
       if (progressStatusText) progressStatusText.innerText = 'Uploading new images...';
       if (progressBarInner) progressBarInner.style.width = '10%';
 
@@ -1159,7 +1224,7 @@ export function initGallery(config: GalleryConfig) {
         renderGallery();
 
         if (progressBarInner) progressBarInner.style.width = '100%';
-        if (progressStatusText) progressStatusText.innerText = 'Stack updated!';
+        if (progressStatusText) progressStatusText.innerText = 'Album updated!';
         refreshPageBtn?.classList.add('active');
       } catch (e: any) {
         if (progressStatusText) progressStatusText.innerText = `Error: ${e.message}`;
@@ -1180,7 +1245,7 @@ export function initGallery(config: GalleryConfig) {
 
       if (confirmDeleteModal) {
         confirmDeleteModal.querySelector('.modal-title')!.textContent = 'Confirm Delete Actions';
-        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to remove ${deletedImages.length} image(s) from this stack.<br>This cannot be undone.`;
+        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to remove ${deletedImages.length} photo(s) from this album.<br>This cannot be undone.`;
         openModal(confirmDeleteModal);
       }
 

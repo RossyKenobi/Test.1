@@ -54,7 +54,13 @@ The portfolio follows a **Minimalist Luxury** aesthetic:
 
 ## 📝 Changelog
 
-### v1.5.0 (Current)
+### v1.6.0 (Current)
+- **Album Workflow Overhaul**: Redesigned the "Create Album" and "Edit Album" modals, introducing an incremental upload workflow with multi-batch photo selection and instant mini-previews.
+- **Micro-Management**: Added the ability to dynamically delete individual photos from the preview queue *before* confirming an upload.
+- **UI Terminology Normalization**: Completely standardized the user interface lexicon, replacing all legacy terms ("Stack", "Image", "Order") with a cleaner, uniform "Album", "Photo", and "Changes" hierarchy.
+- **Auto-Attribution Fallback**: Upgraded the PhotoSwipe gallery caption logic to intelligently fallback to the uploader's account name when explicit author fields are empty, ensuring consistent attribution (with forced uppercase formatting).
+
+### v1.5.0
 - **Expanded Mode Engine**: Implemented the "Expand/Collapse" view toggle with independent photo-level sorting (`expanded_sort_order`).
 - **Owner Preference Persistence**: Gallery display mode (expanded/collapsed) is now saved to the user profile and persists across visits.
 - **UI Hardening**: Resolved visual artifacts, ghosting animations, and layout shifts in the bottom bar. Established a stable, fixed-width button system.
