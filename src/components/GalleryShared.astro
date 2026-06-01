@@ -46,12 +46,12 @@ const { isAuthenticated, showEditControls, showInviteModal = false, showClerkMod
     <h3 class="modal-title" style="margin-bottom: 0.5rem; letter-spacing: 0.2em;">CREATE NEW ALBUM</h3>
     <p style="color: rgba(255,255,255,0.4); font-size: 0.75rem; letter-spacing: 0.05em; text-align: center; margin-bottom: 2rem;">Import any amount of photos to create a new album.</p>
 
-    <div id="local-tab" class="tab-content active">
+    <div id="local-tab" class="tab-content active drag-drop-zone" style="padding: 1rem; margin: -1rem; border-radius: 4px;">
       <div class="modal-input-group" style="display: flex; flex-direction: column; gap: 0.75rem;">
         <div>
           <div style="display: flex; align-items: center; justify-content: flex-start; gap: 1rem;">
               <label for="local-file-input" class="action-btn confirm" style="cursor: pointer; display: inline-block;">Choose Photos</label>
-              <span id="file-name-display" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em; font-weight: 300;">No photos chosen.</span>
+              <span id="file-name-display" style="color: rgba(255,255,255,0.5); font-size: 0.8rem; letter-spacing: 0.1em; font-weight: 300;">Or drag & drop photos here</span>
           </div>
           <div id="local-preview-grid" class="mini-gallery-grid" style="display: none; margin-top: 1rem; text-align: left;"></div>
         </div>
@@ -70,8 +70,8 @@ const { isAuthenticated, showEditControls, showInviteModal = false, showClerkMod
 <div class="modal-overlay" id="mini-gallery-modal">
   <div class="modal-content">
     <h3 class="modal-title" style="letter-spacing: 0.2em;">EDIT ALBUM</h3>
-    <p class="modal-caption" style="margin-bottom: 0;">Drag to reorder, click × to delete</p>
-    <div id="mini-gallery-grid" class="mini-gallery-grid"></div>
+    <p class="modal-caption" style="margin-bottom: 0;">Drag to reorder, click × to delete. Or drag & drop new photos.</p>
+    <div id="mini-gallery-grid" class="mini-gallery-grid drag-drop-zone" style="padding: 1rem; margin: -1rem 0 1rem 0; border-radius: 4px;"></div>
     <textarea id="mini-caption-input" class="mini-caption-textarea" placeholder="Say Something?" rows="2"></textarea>
 
     <div class="modal-actions" style="margin-top: 2.5rem; justify-content: flex-end; gap: 1.5rem;">
@@ -161,3 +161,9 @@ const { isAuthenticated, showEditControls, showInviteModal = false, showClerkMod
 <!-- File inputs OUTSIDE all modals to prevent file picker from closing modals -->
 <input type="file" id="local-file-input" multiple accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0);" />
 <input type="file" id="mini-file-input" multiple accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; clip: rect(0,0,0,0);" />
+
+<!-- Undo Delete Toast -->
+<div class="undo-toast" id="undo-toast">
+  <span id="undo-toast-text">Deleting...</span>
+  <button id="undo-toast-btn">Undo</button>
+</div>

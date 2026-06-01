@@ -127,23 +127,41 @@ function renderLocalPreviewGrid() {
 // Image compression moved to shared module (uses OffscreenCanvas when available)
 import { compressImage } from './compress';
 
-async function uploadToR2(file: Blob, filename: string): Promise<string> {
+async function uploadToR2(file: Blob, filename: string, onProgress?: (percent: number) => void): Promise<string> {
   const compressed = await compressImage(file);
 
   const formData = new FormData();
   formData.append('filename', filename);
   formData.append('file', compressed, filename);
 
-  const res = await fetch(UPLOAD_API, {
-    method: 'POST',
-    body: formData,
-  });
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', UPLOAD_API);
+    
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(e.loaded / e.total);
+        }
+      };
+    }
 
-  const data = await res.json().catch(() => null);
-  if (!res.ok || !data) {
-    throw new Error((data && data.error) || `Upload failed (HTTP ${res.status})`);
-  }
-  return data.finalImageUrl;
+    xhr.onload = () => {
+      let data = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch (e) {}
+      
+      if (xhr.status >= 200 && xhr.status < 300 && data) {
+        resolve(data.finalImageUrl);
+      } else {
+        reject(new Error((data && data.error) || `Upload failed (HTTP ${xhr.status})`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.send(formData);
+  });
 }
 
 function dataUrlToBlob(dataUrl: string): Blob {
@@ -747,8 +765,14 @@ async function handleLocalUpload() {
       const file = files[i];
       const fileName = `p_local_${timestamp}_${i}.jpg`;
       if (progressStatusText) progressStatusText.innerText = `Uploading image ${i + 1}/${files.length}...`;
-      if (progressBarInner) progressBarInner.style.width = `${10 + ((i + 1) / files.length) * 50}%`;
-      const finalUrl = await uploadToR2(file, fileName);
+      
+      const basePercent = 10 + (i / files.length) * 50;
+      const filePercentChunk = 50 / files.length;
+      if (progressBarInner) progressBarInner.style.width = `${basePercent}%`;
+      
+      const finalUrl = await uploadToR2(file, fileName, (p) => {
+        if (progressBarInner) progressBarInner.style.width = `${basePercent + p * filePercentChunk}%`;
+      });
       imageUrls.push(finalUrl);
     }
 
@@ -999,33 +1023,44 @@ export function initGallery(config: GalleryConfig) {
       }
     };
 
-    if (pendingDeletedStackIds.length > 0) {
-      const thumbContainer = document.getElementById('delete-thumbnails-container');
-      if (thumbContainer) {
-        thumbContainer.innerHTML = pendingDeletedStackIds.map(id => {
-          const post = allPosts.find((p: any) => p.id === id);
-          if (post && post.images && post.images.length > 0) {
-            const thumbUrl = getImageUrl(post.images[0]);
-            return `<img src="${thumbUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" />`;
-          }
-          return '';
-        }).join('');
-      }
-
-      if (confirmDeleteModal) {
-        confirmDeleteModal.querySelector('.modal-title')!.textContent = 'Confirm Delete Options';
-        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to delete ${pendingDeletedStackIds.length} album(s).<br>This action cannot be undone.`;
-        openModal(confirmDeleteModal);
-      }
-
-      const btn = document.getElementById('confirm-delete-btn');
-      if (btn) {
-        const newBtn = btn.cloneNode(true) as HTMLElement;
-        btn.parentNode!.replaceChild(newBtn, btn);
-        newBtn.addEventListener('click', () => {
-          closeModal(confirmDeleteModal);
+    if (pendingDeletedStackIds.length > 0 || pendingDeletedPhotoIds.length > 0) {
+      const toast = document.getElementById('undo-toast');
+      const text = document.getElementById('undo-toast-text');
+      const btn = document.getElementById('undo-toast-btn');
+      
+      if (toast && text && btn) {
+        const totalDeletes = pendingDeletedStackIds.length + pendingDeletedPhotoIds.length;
+        text.innerText = `Deleting ${totalDeletes} item${totalDeletes > 1 ? 's' : ''}...`;
+        toast.classList.add('visible');
+        
+        let committed = false;
+        
+        const commit = () => {
+          if (committed) return;
+          committed = true;
+          toast.classList.remove('visible');
+          btn.removeEventListener('click', undo);
           executeSave();
-        });
+        };
+        
+        const undo = () => {
+          if (committed) return;
+          committed = true;
+          toast.classList.remove('visible');
+          btn.removeEventListener('click', undo);
+          
+          // Revert deletions
+          pendingDeletedStackIds = [];
+          pendingDeletedPhotoIds = [];
+          exitEditMode();
+          if (isExpanded) renderExpandedGallery();
+          else renderGallery();
+        };
+        
+        btn.addEventListener('click', undo);
+        setTimeout(commit, 3000);
+      } else {
+        executeSave();
       }
     } else {
       executeSave();
@@ -1159,11 +1194,16 @@ export function initGallery(config: GalleryConfig) {
         for (let i = 0; i < newDataUrls.length; i++) {
           const { idx, dataUrl } = newDataUrls[i];
           if (progressStatusText) progressStatusText.innerText = `Uploading image ${i + 1}/${newDataUrls.length}...`;
-          if (progressBarInner) progressBarInner.style.width = `${10 + ((i + 1) / newDataUrls.length) * 50}%`;
+          
+          const basePercent = 10 + (i / newDataUrls.length) * 50;
+          const filePercentChunk = 50 / newDataUrls.length;
+          if (progressBarInner) progressBarInner.style.width = `${basePercent}%`;
 
           const blob = dataUrlToBlob(dataUrl);
           const fileName = `p_${postId}_add_${timestamp}_${i}.jpg`;
-          const finalUrl = await uploadToR2(blob, fileName);
+          const finalUrl = await uploadToR2(blob, fileName, (p) => {
+            if (progressBarInner) progressBarInner.style.width = `${basePercent + p * filePercentChunk}%`;
+          });
           currentMiniImages[idx] = finalUrl;
         }
 
@@ -1199,25 +1239,77 @@ export function initGallery(config: GalleryConfig) {
         }).join('');
       }
 
-      if (confirmDeleteModal) {
-        confirmDeleteModal.querySelector('.modal-title')!.textContent = 'Confirm Delete Actions';
-        confirmDeleteModal.querySelector('.modal-caption')!.innerHTML = `You are about to remove ${deletedImages.length} photo(s) from this album.<br>This cannot be undone.`;
-        openModal(confirmDeleteModal);
-      }
-
-      const btn = document.getElementById('confirm-delete-btn');
-      if (btn) {
-        const newBtn = btn.cloneNode(true) as HTMLElement;
-        btn.parentNode!.replaceChild(newBtn, btn);
-        newBtn.addEventListener('click', () => {
-          closeModal(confirmDeleteModal);
+      if (deletedImages.length > 0) {
+        const toast = document.getElementById('undo-toast');
+        const text = document.getElementById('undo-toast-text');
+        const btn = document.getElementById('undo-toast-btn');
+        
+        if (toast && text && btn) {
+          text.innerText = `Removing ${deletedImages.length} photo${deletedImages.length > 1 ? 's' : ''}...`;
+          toast.classList.add('visible');
+          
+          let committed = false;
+          
+          const commit = () => {
+            if (committed) return;
+            committed = true;
+            toast.classList.remove('visible');
+            btn.removeEventListener('click', undo);
+            executeSave();
+          };
+          
+          const undo = () => {
+            if (committed) return;
+            committed = true;
+            toast.classList.remove('visible');
+            btn.removeEventListener('click', undo);
+            
+            // Revert deletions
+            deletedImages = [];
+            closeModal(miniGalleryModal);
+            // We just close the modal without saving, so user doesn't lose data but doesn't commit either.
+          };
+          
+          btn.addEventListener('click', undo);
+          setTimeout(commit, 3000);
+        } else {
           executeSave();
-        });
+        }
+      } else {
+        executeSave();
       }
     } else {
       executeSave();
     }
   });
+
+  // --- Drag and Drop Setup ---
+  const setupDragAndDrop = (dropZoneId: string, fileInputId: string) => {
+    const dropZone = document.getElementById(dropZoneId);
+    const fileInput = document.getElementById(fileInputId) as HTMLInputElement;
+    if (!dropZone || !fileInput) return;
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+      }
+    });
+  };
+
+  setupDragAndDrop('local-tab', 'local-file-input');
+  setupDragAndDrop('mini-gallery-grid', 'mini-file-input');
 
   // --- Initial Load ---
   loadGallery().then(() => {

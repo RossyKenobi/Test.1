@@ -44,6 +44,12 @@ try {
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>THE GALLERY BY F.Y.</title>
+    
+    <!-- PWA / Offline Support -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
     <!-- PhotoSwipe CSS -->
     <link rel="stylesheet" href="https://unpkg.com/photoswipe@5.4.3/dist/photoswipe.css">
     <!-- Mixed Typography: Montserrat (UI) & Cormorant Garamond (Editorial) -->
@@ -245,6 +251,15 @@ try {
       import { initGallery } from '../scripts/gallery';
       import { initHeroScroll } from '../scripts/hero-scroll';
       import { initUserMenu, initNavigationInterception, initClerkSignInAndInvite, initClerkTextObserver } from '../scripts/clerk-auth';
+
+      // Register Service Worker for PWA / Offline Gallery
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.error('SW registration failed:', err);
+          });
+        });
+      }
 
       const AUTH = (window as any).__AUTH__ || {};
 
