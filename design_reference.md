@@ -1,16 +1,17 @@
 # Design Reference
 
-## Selected Figma Template
-**Minimalist Photographer Portfolio (by lou)**
-URL: https://www.figma.com/community/file/1574627105956526897/minimalist-photographer-portfolio
+## Design Philosophy
+**Minimalist Luxury** — A photography portfolio that prioritizes visual content through:
+- **Typography-First**: High-contrast headings using Montserrat (UI) and Cormorant Garamond (editorial).
+- **Dark Aesthetic**: Deep black backgrounds with subtle glassmorphism effects.
+- **Micro-Animations**: Hover transitions, scroll-driven blur effects, and tactile feedback.
+- **Generous Whitespace**: Letting the photography take 100% of the focus.
 
-## Core Design Requirements
-- **Hero Section**: Full-screen, high-impact background image.
-- **Navigation**: Uber-minimal, likely transparent or blending seamlessly with the hero image.
-- **Typography & Layout**: Absolute minimalism. Generous whitespace, letting the photography take 100% of the focus.
-- **Gallery**: Clean grid or full-width scrolling images without distracting borders or cards.
+## Core Layout
+- **Hero Section**: Full-screen background image with parallax scroll and glassmorphism blur.
+- **Navigation**: Minimal pill-shaped navbar with dynamic blur sync on scroll.
+- **Gallery**: Adaptive CSS grid with portrait/landscape auto-detection. PhotoSwipe 5 lightbox.
+- **Contact**: Clean icon + link layout at page bottom.
 
-## Implementation Tasks for Astro Project
-1. Update `index.astro` and global CSS to implement the full-screen hero image layout.
-2. Refactor the navigation component to be minimal and unobtrusive.
-3. Ensure the Instagram gallery syncs into a display format that matches the clean, margin-heavy aesthetic of the Figma file.
+## Reference
+Original Figma inspiration: [Minimalist Photographer Portfolio by lou](https://www.figma.com/community/file/1574627105956526897/minimalist-photographer-portfolio)

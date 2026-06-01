@@ -163,7 +163,6 @@ async function compressImage(file: Blob): Promise<Blob> {
 
 async function uploadToR2(file: Blob, filename: string): Promise<string> {
   const compressed = await compressImage(file);
-  console.log(`Compressed: ${(file.size/1024/1024).toFixed(1)}MB → ${(compressed.size/1024/1024).toFixed(1)}MB`);
 
   const formData = new FormData();
   formData.append('filename', filename);
@@ -504,10 +503,8 @@ function enterEditMode() {
     sortableInstance = new Sortable(el, {
       animation: 150,
       ghostClass: 'sortable-ghost',
-      onEnd: () => { if (typeof (window as any).resizeAllGridItems === 'function') (window as any).resizeAllGridItems(); }
     });
   }
-  setTimeout(() => { if (typeof (window as any).resizeAllGridItems === 'function') (window as any).resizeAllGridItems(); }, 50);
 }
 
 function exitEditMode() {
@@ -528,7 +525,6 @@ function exitEditMode() {
   if (createAlbumBtn) createAlbumBtn.classList.remove('hidden');
 
   if (sortableInstance) sortableInstance.destroy();
-  setTimeout(() => { if (typeof (window as any).resizeAllGridItems === 'function') (window as any).resizeAllGridItems(); }, 50);
 }
 
 // --- Mini Gallery Logic ---
@@ -828,10 +824,6 @@ async function handleLocalUpload() {
   }
 }
 
-// --- Grid Masonry (No-op, layout handled by CSS) ---
-(window as any).resizeGridItem = function() {};
-(window as any).resizeAllGridItems = function() {};
-
 // --- Load Gallery Data ---
 async function loadGallery() {
   try {
@@ -858,8 +850,6 @@ async function loadGallery() {
 // ==========================================
 export function initGallery(config: GalleryConfig) {
   galleryConfig = config;
-
-  console.log(`--- Gallery Module v3.0.0 (${config.mode} mode) ---`);
 
   // Resolve DOM elements
   importModal = document.getElementById('import-modal');
@@ -1262,10 +1252,6 @@ export function initGallery(config: GalleryConfig) {
       executeSave();
     }
   });
-
-  // --- Grid Masonry ---
-  window.addEventListener('load', (window as any).resizeAllGridItems);
-  window.addEventListener('resize', (window as any).resizeAllGridItems);
 
   // --- Initial Load ---
   loadGallery().then(() => {

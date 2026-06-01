@@ -73,12 +73,12 @@ export function initNavigationInterception() {
   try {
     const origAssign = Location.prototype.assign;
     Location.prototype.assign = function(url: string) {
-      if (isClerkRedirect(url)) { console.log('Blocked redirect:', url); return; }
+      if (isClerkRedirect(url)) { return; }
       return origAssign.call(this, url);
     };
     const origReplace = Location.prototype.replace;
     Location.prototype.replace = function(url: string) {
-      if (isClerkRedirect(url)) { console.log('Blocked redirect:', url); return; }
+      if (isClerkRedirect(url)) { return; }
       return origReplace.call(this, url);
     };
   } catch(e) {}
